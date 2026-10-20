@@ -146,10 +146,12 @@ test("formula sheets explain their symbols", async ({ page }) => {
 for (const [id, lecture, topic, note, label] of [
   ["m1", 1, "Networks under attack", "security", "Lecture 2"],
   ["m2", 1, "Video streaming and CDNs", "video", "Lecture 4"],
+  ["m3", 2, "TCP: flow control and connection management", "tcp-conn", "Lecture 6"],
+  ["m3", 0, "Multiplexing and demultiplexing", "mux", "Lecture 7"],
 ] as const) {
-  test(`${id} maps its lectures to study notes`, async ({ page }) => {
+  test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
-    await expect(page.locator(".lecture")).toHaveCount(2);
+    await expect(page.locator(".lecture")).toHaveCount(id === "m3" ? 3 : 2);
     await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
     await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
     await expect(page.locator(`#${id}-${note}`)).toBeInViewport();
