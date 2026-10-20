@@ -1,0 +1,16 @@
+# dependencies
+/node_modules
+
+# build output
+/dist
+
+# course book: copyrighted, reference only, never commit or ship it
+*.pdf
+
+# local env files
+.env
+.env*.local
+
+# misc
+.DS_Store
+*.tsbuildinfo

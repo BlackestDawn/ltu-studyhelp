@@ -1,0 +1,13 @@
+.git
+.github
+.vscode
+.claude
+node_modules
+dist
+*.pdf
+*.md
+LICENSE
+Dockerfile
+.dockerignore
+.env
+.env.*

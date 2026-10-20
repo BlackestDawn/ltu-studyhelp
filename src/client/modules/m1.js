@@ -1,0 +1,68 @@
+import { rnd, pick, fmt } from "../lib/util.js";
+import { bankDrill } from "../lib/drill.js";
+
+const M1_DRILLS=[
+{id:"m1delay",pages:"pp. 23–24 store-and-forward (§1.3.1) · pp. 35–39 types of delay (§1.4.1) · pp. 41–43 end-to-end delay (§1.4.3)",tag:"Delay · store-and-forward",title:"End-to-end delay over several links",gen(){
+  const L=pick([1000,1250,1500,2000]),R=pick([1,2,5,10,100]),D=pick([200,500,1000,2500,4000]),N=rnd(2,4);
+  const dt=L*8/(R*1e6)*1e3,dp=D*1e3/2e8*1e3,tot=N*(dt+dp);
+  return{q:`<p>A <b>${L}-byte</b> packet goes from host A to host B over <b>${N} links</b> in series (${N-1} store-and-forward router${N>2?"s":""}). Every link runs at <b>${R} Mbps</b> and is <b>${D} km</b> long. Propagation speed is 2×10<sup>8</sup> m/s. Ignore processing and queuing delay.</p>`,
+  fields:[{label:"Transmission delay on one link",unit:"ms",type:"num",ans:dt},{label:"Propagation delay on one link",unit:"ms",type:"num",ans:dp},{label:"Total end-to-end delay",unit:"ms",type:"num",ans:tot}],
+  sol:`<p><b>Transmission</b> is the time to push all bits onto the wire: <code>d_trans = L/R = ${L*8} bits ÷ ${R}×10⁶ bps = ${fmt(dt)} ms</code>. It depends on packet size and link rate, not distance.</p>
+  <p><b>Propagation</b> is the time for one bit to travel the length of the link: <code>d_prop = d/s = ${D}×10³ m ÷ 2×10⁸ m/s = ${fmt(dp)} ms</code>. It depends on distance, not packet size.</p>
+  <p><b>Store-and-forward:</b> each router waits for the whole packet before it starts sending it on, so every link costs a full <code>d_trans + d_prop</code>: <code>${N} × (${fmt(dt)} + ${fmt(dp)}) = ${fmt(tot)} ms</code>.</p>`};}},
+{id:"m1seg",pages:"pp. 23–27 packet switching and store-and-forward (§1.3.1) · book problem P31",tag:"Packet switching · pipelining",title:"Why we split messages into packets",gen(){
+  const M=pick([4,6,8,12]),R=pick([1,2,4]),N=rnd(2,4),P=pick([4,8,10,20]);
+  const t1=N*M/R,Lp=M/P,t2=(N+P-1)*Lp/R;
+  return{q:`<p>A <b>${M} Mbit</b> message is sent from A to B across <b>${N} links</b> of <b>${R} Mbps</b> each, with store-and-forward routers between them. Ignore propagation, processing, queuing and header overhead.</p>`,
+  fields:[{label:"Time if sent as one whole message",unit:"s",type:"num",ans:t1},{label:`Time if split into ${P} equal packets`,unit:"s",type:"num",ans:t2}],
+  sol:`<p><b>Whole message:</b> each of the ${N} links must carry all ${M} Mbit before the next one can start: <code>${N} × ${M}/${R} = ${fmt(t1)} s</code>.</p>
+  <p><b>Packets:</b> each packet is ${fmt(Lp)} Mbit and takes <code>L/R = ${fmt(Lp/R)} s</code> per link. The first packet reaches B after <code>${N} × ${fmt(Lp/R)}</code> s. After that, one more packet arrives every <code>${fmt(Lp/R)}</code> s, because all links work in parallel on different packets (a pipeline). Total <code>(N + P − 1) × L/R = (${N}+${P}−1) × ${fmt(Lp/R)} = ${fmt(t2)} s</code>.</p><p>Try the pipeline model below to watch this happen.</p>`};}},
+{id:"m1queue",pages:"pp. 39–41 queuing delay, traffic intensity and packet loss (§1.4.2)",tag:"Delay · queuing",title:"Queuing delay and traffic intensity",gen(){
+  const L=pick([1000,1500]),R=pick([1,10,100]),N=rnd(3,12);const dt=L*8/(R*1e6)*1e3,avg=(N-1)*dt/2;
+  const It=pick([0.3,0.6,0.9,1.25,1.6]);const a=Math.round(It*R*1e6/(L*8));const I=L*8*a/(R*1e6);
+  const grow="Grows without bound",ok="Can stay bounded; depends on burstiness";
+  return{q:`<p>A router output link runs at <b>${R} Mbps</b>; all packets are <b>${L} bytes</b>.</p><p>(a) <b>${N} packets</b> arrive at the same instant to an empty queue. What is the <i>average</i> queuing delay across those ${N} packets?</p><p>(b) Later, packets arrive at an average rate of <b>${a} packets/s</b>. Compute the traffic intensity and say what happens to the queue.</p>`,
+  fields:[{label:"(a) Average queuing delay",unit:"ms",type:"num",ans:avg},{label:"(b) Traffic intensity La/R",unit:"",type:"num",ans:I,abs:0.01},{label:"(b) Queue behaviour",type:"select",opts:[grow,ok],ans:I>1?grow:ok}],
+  sol:`<p>(a) The n-th packet waits for n−1 packets ahead of it, each taking <code>L/R = ${fmt(dt)} ms</code>. Average over all ${N}: <code>(0+1+…+${N-1}) × L/R ÷ ${N} = (N−1)L/(2R) = ${fmt(avg)} ms</code>.</p>
+  <p>(b) <code>I = La/R = ${L*8} × ${a} ÷ ${R}×10⁶ = ${fmt(I)}</code>. ${I>1?"Bits arrive faster than the link can send them, so the queue (and delay) keeps growing until the buffer fills and packets are dropped. Design rule: never let I exceed 1.":"On average the link keeps up. Delay is small if arrivals are spread out and larger if they come in bursts; it rises steeply as I approaches 1."}</p>`};}},
+{id:"m1tput",pages:"pp. 43–46 throughput and the bottleneck link (§1.4.4)",tag:"Throughput · bottleneck",title:"Find the bottleneck link",gen(){
+  let Rs,Rc,Rn,n;do{Rs=pick([2,5,10,20,50]);Rc=pick([1,4,8,15,30]);n=pick([5,10,20]);Rn=pick([50,100,200]);}while(new Set([Rs,Rc,Rn/n]).size<3);
+  const thr=Math.min(Rs,Rc,Rn/n),F=pick([10,32,100]);const which=thr===Rs?"Server access link":thr===Rc?"Client access link":"Shared core link";
+  return{q:`<p><b>${n}</b> servers each send a file to their own client at the same time. Each server access link is <b>${Rs} Mbps</b>, each client access link is <b>${Rc} Mbps</b>, and all ${n} connections cross one shared core link of <b>${Rn} Mbps</b> that splits its capacity equally.</p>`,
+  fields:[{label:"Throughput of one connection",unit:"Mbps",type:"num",ans:thr},{label:"Which link is the bottleneck?",type:"select",opts:["Server access link","Client access link","Shared core link"],ans:which},{label:`Time to move a ${F} MB file`,unit:"s",type:"num",ans:F*8/thr}],
+  sol:`<p>End-to-end throughput is limited by the slowest link on the path: <code>min(R_s, R_c, R/n) = min(${Rs}, ${Rc}, ${Rn}/${n}=${fmt(Rn/n)}) = ${fmt(thr)} Mbps</code>.</p><p>File time: <code>${F} MB × 8 = ${F*8} Mbit ÷ ${fmt(thr)} Mbps = ${fmt(F*8/thr)} s</code>.</p>`};}},
+{id:"m1pscs",pages:"pp. 27–31 circuit switching vs packet switching (§1.3.2)",tag:"Packet vs circuit switching",title:"How many users can share a link?",gen(){
+  const R=pick([1,10,100]),k=pick([5,10]),r=R/k,p=pick([0.05,0.1,0.2]),N=pick([20,30,35,50]);
+  const C=(n,i)=>{let c=1;for(let j=1;j<=i;j++)c=c*(n-j+1)/j;return c;};
+  let cum=0;for(let i=0;i<=k;i++)cum+=C(N,i)*p**i*(1-p)**(N-i);const pr=(1-cum)*100;
+  return{q:`<p>A link of <b>${R} Mbps</b> is shared by users who each need <b>${fmt(r)} Mbps</b> while active. Each user is active independently a fraction <b>p = ${p}</b> of the time.</p>`,
+  fields:[{label:"Max users with circuit switching",unit:"users",type:"num",ans:k},{label:`With packet switching and ${N} users: probability that more than ${k} are active at once`,unit:"%",type:"num",ans:pr,rel:0.03,abs:0.01},{label:`Average number active out of ${N}`,unit:"users",type:"num",ans:N*p}],
+  sol:`<p>Circuit switching reserves ${fmt(r)} Mbps per user whether they use it or not, so only <code>${R}/${fmt(r)} = ${k}</code> users fit.</p>
+  <p>Packet switching lets everyone share on demand. Trouble (queuing and loss) only happens when more than ${k} are active. The number active is binomial(N=${N}, p=${p}):</p>
+  <p><code>P(X > ${k}) = 1 − Σ_{i=0}^{${k}} C(${N}, i) · ${p}^i · ${1-p}^{${N}−i} = ${fmt(pr)}%</code></p>
+  <p>On average only <code>Np = ${fmt(N*p)}</code> users are active, so packet switching supports ${N} users with rare overload. This is <b>statistical multiplexing</b>, and it works because traffic is bursty.</p>`};}},
+{id:"m1layers",pages:"pp. 47–52 layered architecture (§1.5.1) · pp. 52–54 encapsulation (§1.5.2)",fixed:true,tag:"Protocol layers",title:"Layers, PDUs and devices",gen:bankDrill([
+  {label:"Name of the transport-layer PDU",type:"select",opts:["message","segment","datagram","frame"],ans:"segment",short:"Transport PDU:",why:"segment. The transport layer wraps the application message with its header (ports, etc.)."},
+  {label:"Name of the network-layer PDU",type:"select",opts:["message","segment","datagram","frame"],ans:"datagram",short:"Network PDU:",why:"datagram. IP adds source/destination IP addresses around the segment."},
+  {label:"Name of the link-layer PDU",type:"select",opts:["message","segment","datagram","frame"],ans:"frame",short:"Link PDU:",why:"frame. The link layer adds MAC addresses for one hop."},
+  {label:"Highest layer a router implements",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Network",short:"Router:",why:"layers 1–3. It reads the IP header to forward; it does not look at transport or application data."},
+  {label:"Highest layer a link-layer switch implements",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Link",short:"Switch:",why:"layers 1–2. It forwards using MAC addresses only."},
+  {label:"Layer that delivers data process-to-process",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Transport",short:"Process-to-process:",why:"transport (TCP/UDP), using port numbers."},
+  {label:"Layer that moves datagrams host-to-host across many hops",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Network",short:"Host-to-host:",why:"network (IP), via routing and forwarding."},
+  {label:"Layer that moves individual bits over the medium",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Physical",short:"Bits on the wire:",why:"physical."},
+  {label:"Layer where HTTP, SMTP and DNS live",type:"select",opts:["Application","Transport","Network","Link","Physical"],ans:"Application",short:"HTTP/SMTP/DNS:",why:"application layer, running only in end systems."}
+],5)}
+];
+const M1_MCQ=[
+{q:"What does a network protocol define?",o:["Only the physical cable and connector type","The format and order of messages exchanged, and the actions taken when a message is sent or received","The speed at which a link transmits bits","Which company owns each router"],a:1,why:"That is the book's definition (§1.1.3). Format + order + actions. Speed is a property of the link, not of the protocol."},
+{q:"Which of these belongs to the <i>network core</i>?",o:["A laptop running a browser","A web server in a data centre","The mesh of packet switches and links that interconnect access networks","The Wi-Fi access point in your home"],a:2,why:"Hosts (laptops, servers) are at the edge; your home Wi-Fi is part of an access network. The core is the interconnected routers."},
+{q:"Which delay grows with the distance between two routers but does NOT depend on packet length?",o:["Transmission delay","Propagation delay","Queuing delay","Processing delay"],a:1,why:"Propagation = distance ÷ signal speed. Transmission = L/R depends on packet length, not distance."},
+{q:"A packet is dropped at a router. What is the most likely reason?",o:["Propagation delay was too long","It arrived to find the output buffer full","Its transmission delay was too short","The router used circuit switching"],a:1,why:"Buffers are finite. When packets arrive faster than the link drains them, the buffer fills and new arrivals are lost."},
+{q:"Why can packet switching serve more users than circuit switching on the same link?",o:["Packets travel faster than circuits","Users are bursty, so bandwidth reserved but unused in circuits can be shared on demand","Packet switching uses no buffers","Circuit switching requires more routers"],a:1,why:"Statistical multiplexing. Circuit switching guarantees rate but wastes it during silent periods. The price for packet switching is possible queuing delay and loss."},
+{q:"A server sends to a client over a path with links of 2 Mbps, 100 Mbps and 10 Mbps. End-to-end throughput is about:",o:["112 Mbps","100 Mbps","10 Mbps","2 Mbps"],a:3,why:"The bottleneck (slowest link) sets throughput."},
+{q:"An attacker sends packets with a forged source IP address. This is called:",o:["Packet sniffing","IP spoofing","A DDoS attack","Malware"],a:1,why:"Spoofing fakes the source address. Sniffing passively records packets; DDoS floods a target from many (often botnet) hosts."},
+{q:"Why was security not built into the original Internet?",o:["It was too expensive in the 1970s","It was designed for a group of mutually trusting users on a transparent network","Encryption had not been invented","Routers could not process encrypted traffic"],a:1,why:"The book stresses this (§1.6): the original model assumed trusting users, so security has been added on top afterwards."},
+{q:"What is the main advantage of organising protocols into layers?",o:["It makes every packet smaller","Modularity: a layer's implementation can change without affecting the other layers","It removes the need for headers","It guarantees reliable delivery"],a:1,why:"Each layer offers a service to the layer above. A possible downside is duplicated functionality (e.g. error checking at several layers)."},
+{q:"When a TCP segment is passed down to IP, what does IP do to it?",o:["Removes the transport header","Adds its own header around it, producing a datagram (encapsulation)","Splits it into bits","Encrypts it"],a:1,why:"Encapsulation: each layer adds a header; the receiving side's matching layer reads and removes it."}
+];
+export { M1_DRILLS, M1_MCQ };

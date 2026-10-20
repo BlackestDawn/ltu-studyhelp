@@ -1,0 +1,17 @@
+{
+  "name": "ltu-studyhelp",
+  "description": "Networks Midterm Workbench: practice labs for Computer Networking (Kurose & Ross, 8th ed.)",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/server.ts",
+    "build": "bun build --target=bun --production --outdir=dist src/server.ts",
+    "start": "cd dist && NODE_ENV=production bun server.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.3.0",
+    "typescript": "^5.8.3"
+  }
+}
