@@ -143,11 +143,16 @@ test("formula sheets explain their symbols", async ({ page }) => {
   }
 });
 
-test("module 1 maps its lectures to study notes", async ({ page }) => {
-  await page.goto("/m1");
-  await expect(page.locator(".lecture")).toHaveCount(2);
-  await page.locator(".lecture").nth(1).getByRole("link", { name: "Networks under attack" }).click();
-  await expect(page).toHaveURL(/\/m1\/notes#m1-security$/);
-  await expect(page.locator("#m1-security")).toBeInViewport();
-  await expect(page.locator("#m1-security .pages")).toContainText("Lecture 2");
-});
+for (const [id, lecture, topic, note, label] of [
+  ["m1", 1, "Networks under attack", "security", "Lecture 2"],
+  ["m2", 1, "Video streaming and CDNs", "video", "Lecture 4"],
+] as const) {
+  test(`${id} maps its lectures to study notes`, async ({ page }) => {
+    await page.goto(`/${id}`);
+    await expect(page.locator(".lecture")).toHaveCount(2);
+    await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
+    await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
+    await expect(page.locator(`#${id}-${note}`)).toBeInViewport();
+    await expect(page.locator(`#${id}-${note} .pages`)).toContainText(label);
+  });
+}
