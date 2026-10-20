@@ -18,12 +18,12 @@ summary: {
     "<b>DASH</b> lets the client choose the bitrate of each chunk. <b>CDNs</b> place copies near users and redirect requests through DNS.",
   ],
   formulas: [
-    ["2·RTT + L/R", "Non-persistent HTTP, per object: one RTT for the TCP handshake, one for request and response, plus the file's transmission time.", "Timing problems with a new TCP connection per object."],
-    ["≈ 1 RTT per object", "Persistent HTTP after the first object. With pipelining, all remaining requests share about one RTT.", "Connection stays open."],
-    ["Σ RTT_DNS + 2·RTT₀ (+ objects)", "Total page time with an empty DNS cache: DNS lookups first, then the HTTP connection.", "Problems P7–P8 style."],
-    ["I = (a · L) / R_access", "Traffic intensity on an institution's access link (requests/s × object size ÷ link rate).", "Web caching problems: a cache hit rate h cuts this to (1 − h)·I."],
-    ["D_cs ≥ max( N·F/u_s , F/d_min )", "Client-server: the server uploads N copies; the slowest client needs F/d_min.", "File distribution, client-server."],
-    ["D_P2P ≥ max( F/u_s , F/d_min , N·F/(u_s + Σuᵢ) )", "P2P: the server sends at least one copy, the slowest peer must download F, and the total upload capacity grows with N.", "File distribution, P2P."],
+    ["2·RTT + L/R", "Non-persistent HTTP, per object: one RTT for the TCP handshake, one for request and response, plus the file's transmission time.", "Timing problems with a new TCP connection per object.", [["RTT", "round-trip time between client and server"], ["L", "size of the object, in bits"], ["R", "rate of the link it is sent over, in bits/s (often negligible)"]]],
+    ["≈ 1 RTT per object", "Persistent HTTP after the first object. With pipelining, all remaining requests share about one RTT.", "Connection stays open.", [["RTT", "round-trip time between client and server"]]],
+    ["Σ RTT_DNS + 2·RTT₀ (+ objects)", "Total page time with an empty DNS cache: DNS lookups first, then the HTTP connection.", "Problems P7–P8 style.", [["RTT_DNS", "round-trip time to each DNS server visited"], ["RTT₀", "round-trip time between your host and the web server"]]],
+    ["I = (a · L) / R_access", "Traffic intensity on an institution's access link (requests/s × object size ÷ link rate).", "Web caching problems: a cache hit rate h cuts this to (1 − h)·I.", [["a", "request rate over the access link, in requests/s"], ["L", "average object size, in bits"], ["R_access", "access link rate, in bits/s"], ["h", "cache hit rate: share of requests the cache answers"]]],
+    ["D_cs ≥ max( N·F/u_s , F/d_min )", "Client-server: the server uploads N copies; the slowest client needs F/d_min.", "File distribution, client-server.", [["N", "number of clients that need the file"], ["F", "file size, in bits"], ["u_s", "server upload rate, in bits/s"], ["d_min", "download rate of the slowest client"]]],
+    ["D_P2P ≥ max( F/u_s , F/d_min , N·F/(u_s + Σuᵢ) )", "P2P: the server sends at least one copy, the slowest peer must download F, and the total upload capacity grows with N.", "File distribution, P2P.", [["F", "file size, in bits"], ["u_s", "server upload rate"], ["d_min", "download rate of the slowest peer"], ["N", "number of peers"], ["Σuᵢ", "sum of all peers' upload rates (N·u if all equal)"]]],
     ["8 / 6 / 2 messages", "Iterative DNS lookup counting host↔local: nothing cached / TLD server cached / name cached.", "Counting DNS messages."],
   ],
   traps: [

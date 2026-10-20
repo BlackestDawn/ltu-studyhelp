@@ -21,9 +21,9 @@ function summary(m) {
   el.innerHTML = `
   <section><h2>The big picture</h2><div class="prose">${s.big}</div></section>
   <section><h2>Key takeaways</h2><ol class="takeaways">${s.takeaways.map(t => `<li>${t}</li>`).join("")}</ol></section>
-  <section><h2>Formula sheet</h2><p class="sub">Every formula used in this module's labs, what it means and when to reach for it.</p>
+  <section><h2>Formula sheet</h2><p class="sub">Every formula used in this module's labs: what it means, what each symbol stands for, and when to reach for it.</p>
     <div class="tblwrap"><table class="formulas"><thead><tr><th>Formula</th><th>What it means</th><th>Use it when</th></tr></thead><tbody>
-    ${s.formulas.map(([f, what, when]) => `<tr><td><code>${esc(f)}</code></td><td>${what}</td><td>${when}</td></tr>`).join("")}
+    ${s.formulas.map(([f, what, when, vars = []]) => `<tr><td><code>${esc(f)}</code></td><td>${what}${vars.length ? `<ul class="vars" aria-label="Symbols">${vars.map(([v, d]) => `<li><code>${esc(v)}</code> ${d}</li>`).join("")}</ul>` : ""}</td><td>${when}</td></tr>`).join("")}
     </tbody></table></div></section>
   <section><h2>Common traps</h2><ul class="traps">${s.traps.map(t => `<li>${t}</li>`).join("")}</ul></section>
   <section><h2>Check yourself</h2>

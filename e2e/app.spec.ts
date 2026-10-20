@@ -133,3 +133,12 @@ test("numeric answers accept a comma as the decimal separator", async ({ page })
   await drill.locator('[data-act="check"]').click();
   await expect(drill.locator(".feedback")).toContainText(`All ${answers.length} correct`);
 });
+
+test("formula sheets explain their symbols", async ({ page }) => {
+  for (const id of ["m1", "m2", "m3", "m4"]) {
+    await page.goto(`/${id}`);
+    const rows = page.locator(".formulas tbody tr");
+    const withVars = page.locator(".formulas tbody tr:has(.vars li)");
+    expect(await withVars.count(), id).toBeGreaterThanOrEqual((await rows.count()) - 1);
+  }
+});
