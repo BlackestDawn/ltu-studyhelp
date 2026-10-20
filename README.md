@@ -1,16 +1,24 @@
 # Networks Midterm Workbench
 
-Practice labs, interactive models and concept checks for *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–4. Every lab generates fresh numbers, checks answers and shows a worked solution.
+Study app for *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–4. Each module has a summary, study notes with interactive models, labs that generate fresh numbers and show worked solutions, a concept check, and links to further resources.
 
 Everything runs in the browser. Progress and ticked objectives are saved in `localStorage`, so they stay on the viewer's own device.
 
 ## Running locally
 
-Requires [Bun](https://bun.sh) 1.3+.
+Requires [Bun](https://bun.sh) 1.4+ (the lockfile format needs 1.4).
 
 ```bash
-bun install          # only needed for typechecking
+bun install
 bun run dev          # http://localhost:3000, hot reload
+```
+
+Checks (the same ones CI runs):
+
+```bash
+bun run lint                          # ESLint + TypeScript
+bunx playwright install chromium      # once
+bun run test:e2e                      # Playwright suite against the production build
 ```
 
 Production build:
@@ -28,6 +36,10 @@ docker run --rm -p 3000:3000 ltu-studyhelp
 ```
 
 `GET /health` returns `ok` for container and Cloud Run health checks.
+
+## Deployment
+
+Single branch: every push to `main` runs lint, build and the E2E suite, and if they pass, deploys to Cloud Run. See [deploy/README.md](deploy/README.md) for the workflow, rollback and the one-time GCP and GitHub setup.
 
 ## Layout
 

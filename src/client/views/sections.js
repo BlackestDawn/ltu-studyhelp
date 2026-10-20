@@ -70,7 +70,7 @@ function labs(m) {
 
 function quiz(m) {
   const el = document.createElement("div");
-  el.appendChild(renderMCQ(m.mcq, m.id));
+  el.appendChild(renderMCQ(m.mcq));
   return el;
 }
 

@@ -1,7 +1,7 @@
 import { $ } from "./util.js";
 
 /* ---------- MCQ engine ---------- */
-export function renderMCQ(list,mod){
+export function renderMCQ(list){
   const wrap=document.createElement("div");
   const head=document.createElement("div");head.className="mcqhead";
   head.innerHTML=`<p class="sub">Pick an answer to see the reasoning. Aim to explain <i>why</i> the wrong options are wrong.</p><div><span class="mono" data-score></span> <button class="btn ghost" data-reset>Reset</button></div>`;

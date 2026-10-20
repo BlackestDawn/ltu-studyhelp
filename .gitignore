@@ -14,3 +14,15 @@
 # misc
 .DS_Store
 *.tsbuildinfo
+
+# test output
+/playwright-report
+/test-results
+
+# terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+**/terraform.tfvars
+crash.log
