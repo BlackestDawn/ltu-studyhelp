@@ -1,8 +1,8 @@
 # Deployment
 
 ```
-push to main ──▶ lint + build ─┐
-             └─▶ E2E tests  ───┴─▶ build image ──▶ smoke-test image ──▶ push ──▶ deploy Cloud Run
+push to main ──▶ lint + unit tests + build ─┐
+             └─▶ E2E tests  ────────────────┴─▶ build image ──▶ smoke-test image ──▶ push ──▶ deploy Cloud Run
 ```
 
 Single branch, single environment: every push to `main` (or a manual run of "Check and deploy") is checked and, if everything passes, deployed straight to production. A failing check stops the deploy, and the previous revision keeps serving.
@@ -17,7 +17,7 @@ Single branch, single environment: every push to `main` (or a manual run of "Che
 
 | Job | What it does |
 |---|---|
-| `checks` | ESLint + TypeScript (`bun run lint`) and a production build |
+| `checks` | ESLint + TypeScript (`bun run lint`), unit tests (`bun run test`) and a production build |
 | `e2e-tests` | Playwright suite against the production build; report uploaded as an artifact |
 | `deploy` | runs only if both pass: builds the image (tagged with the commit SHA), smoke-tests it locally, pushes it, deploys it, then checks `/health` on the live service |
 

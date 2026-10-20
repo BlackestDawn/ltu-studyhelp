@@ -123,3 +123,13 @@ test("no horizontal scrolling at phone width", async ({ page }) => {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
 });
+
+test("numeric answers accept a comma as the decimal separator", async ({ page }) => {
+  await page.goto("/m1/labs");
+  const drill = page.locator("#d-m1delay");
+  await drill.locator('[data-act="sol"]').click();
+  const answers = await drill.locator(".sol .key li code").allTextContents();
+  for (const [i, a] of answers.entries()) await drill.locator(".fields input").nth(i).fill(a.replace(".", ","));
+  await drill.locator('[data-act="check"]').click();
+  await expect(drill.locator(".feedback")).toContainText(`All ${answers.length} correct`);
+});

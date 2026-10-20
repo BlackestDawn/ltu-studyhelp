@@ -17,6 +17,7 @@ Checks (the same ones CI runs):
 
 ```bash
 bun run lint                          # ESLint + TypeScript
+bun run test                          # unit tests (bun test)
 bunx playwright install chromium      # once
 bun run test:e2e                      # Playwright suite against the production build
 ```

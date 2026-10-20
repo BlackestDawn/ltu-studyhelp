@@ -2,9 +2,22 @@ import { $, shuffle, esc, fmt } from "./util.js";
 import { addSolved } from "./progress.js";
 
 /* ---------- drill engine ---------- */
+// Possible numeric readings of a typed answer. Both "." and "," work as the
+// decimal separator; spaces are ignored. With both present, the last one is
+// the decimal separator and the other groups thousands. Repeated separators
+// group thousands ("1,000,000", "1.000.000"). A lone comma followed by exactly
+// three digits ("1,500") is ambiguous, so both readings are returned.
+export function readNumber(raw){
+  const s=String(raw).replace(/\s/g,""),d=s.lastIndexOf("."),c=s.lastIndexOf(",");
+  let cands;
+  if(d>=0&&c>=0)cands=[d>c?s.replace(/,/g,""):s.replace(/\./g,"").replace(",",".")];
+  else if(c>=0)cands=s.indexOf(",")!==c?[s.replace(/,/g,"")]:/,\d{3}$/.test(s)?[s.replace(",","."),s.replace(",","")]:[s.replace(",",".")];
+  else cands=[s.indexOf(".")!==d?s.replace(/\./g,""):s];
+  return cands.map(parseFloat).filter(v=>!isNaN(v));
+}
 export function judge(f,raw){
   raw=String(raw).trim(); if(raw==="")return null;
-  if(f.type==="num"){const v=parseFloat(raw.replace(/,/g,"").replace(/\s/g,""));if(isNaN(v))return false;const tol=Math.max(f.abs??1e-9,Math.abs(f.ans)*(f.rel??0.01));return Math.abs(v-f.ans)<=tol;}
+  if(f.type==="num"){const vs=readNumber(raw);if(!vs.length)return false;const tol=Math.max(f.abs??1e-9,Math.abs(f.ans)*(f.rel??0.01));return vs.some(v=>Math.abs(v-f.ans)<=tol);}
   if(f.type==="bin")return raw.replace(/[^01]/g,"")===f.ans;
   if(f.type==="seq")return raw.replace(/[^0-9]/g,"")===String(f.ans).replace(/[^0-9]/g,"");
   if(f.type==="select")return [].concat(f.ans).includes(raw);
