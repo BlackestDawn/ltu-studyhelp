@@ -12,6 +12,17 @@ export default {
   probs: ["P5–P6 (scheduling, WFQ)", "P8–P10 (forwarding tables, LPM)", "P11, P14–P15 (subnetting)", "P17 (fragmentation)", "P18–P19 (NAT)", "P21–P23 (OpenFlow flow tables)"],
   inter: [["Longest prefix matching", "longestprefix.php"], ["Subnet addressing", "subnet_addressing.php"], ["Packet scheduling", "scheduling.php"], ["NAT", "nat.php"], ["IPv6 tunneling", "ip_tunneling.php"], ["OpenFlow flow tables", "openflow.php"]],
   lab: "Wireshark lab: IP", tutor: 4,
+  // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
+  lectures: [
+    { title: "Lecture 8: Network layer, inside a router, and IP", pages: "pp. 304–344",
+      notes: ["overview", "router", "ipv4", "addressing"],
+      focus: "Follow one IP datagram through a router: how the header and the forwarding table pick the output port, what happens when packets have to wait, and how IP addresses identify networks and interfaces.",
+      takeaway: "The network layer moves datagrams between hosts across interconnected networks. At each router, the data plane reads the header and uses forwarding information to move the datagram from an input port to the right output port. Hierarchical IP addressing makes this forwarding scale." },
+    { title: "Lecture 9: NAT, IPv6, generalised forwarding and middleboxes", pages: "pp. 344–364",
+      notes: ["nat", "ipv6", "generalized", "middleboxes"],
+      focus: "See how the data plane has grown beyond destination-based forwarding. For each mechanism, ask what problem it solves, what packet information it uses or changes, where it runs, and what it costs the Internet's architecture.",
+      takeaway: "Today's data plane does far more than forward on the destination address: NAT translates addresses, IPv6 extends addressing, generalised forwarding makes packet processing programmable, and middleboxes add functions inside the network. Through it all, IP remains the common network-layer foundation." },
+  ],
   drills: M4_DRILLS, mcq: M4_MCQ,
   ...study,
 };

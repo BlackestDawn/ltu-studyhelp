@@ -148,6 +148,7 @@ for (const [id, lecture, topic, note, label] of [
   ["m2", 1, "Video streaming and CDNs", "video", "Lecture 4"],
   ["m3", 2, "TCP: flow control and connection management", "tcp-conn", "Lecture 6"],
   ["m3", 0, "Multiplexing and demultiplexing", "mux", "Lecture 7"],
+  ["m4", 1, "Generalised forwarding and SDN", "generalized", "Lecture 9"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
