@@ -1,5 +1,5 @@
 import { $ } from "./lib/util.js";
-import { cwndTrace } from "./modules/m3.js";
+import { cwndTrace } from "./lib/cwnd.js";
 
 export function widgetPipeline(){
   const el=document.createElement("article");el.className="card";

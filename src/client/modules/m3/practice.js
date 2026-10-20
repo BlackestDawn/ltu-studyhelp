@@ -1,14 +1,6 @@
-import { rnd, pick, fmt, bin16, tbl } from "../lib/util.js";
+import { rnd, pick, fmt, bin16, tbl } from "../../lib/util.js";
+import { cwndTrace } from "../../lib/cwnd.js";
 
-export function cwndTrace(S0,events,rounds,variant,plus3){
-  let cw=1,ss=S0;const rows=[];
-  for(let r=1;r<=rounds;r++){rows.push({r,cw,ss,phase:cw<ss?"Slow start":"Cong. avoid.",ev:events[r]||null});
-    const ev=events[r];
-    if(ev==="to"){ss=Math.max(1,Math.floor(cw/2));cw=1;}
-    else if(ev==="3dup"){ss=Math.max(1,Math.floor(cw/2));cw=variant==="tahoe"?1:(plus3?ss+3:ss);}
-    else{cw=cw<ss?Math.min(cw*2,ss):cw+1;}}
-  return rows;
-}
 const RENO_RULE="<p class='sub' style='font-size:.88rem'>Rules (in MSS, per RTT round, starting at round 1 with cwnd = 1): slow start doubles cwnd but stops at ssthresh; congestion avoidance adds 1. A loss detected in round r changes cwnd for round r+1. On a <b>timeout</b>: ssthresh = ⌊cwnd/2⌋, cwnd = 1. On <b>3 duplicate ACKs</b> (Reno): ssthresh = ⌊cwnd/2⌋, cwnd = ssthresh + 3 (as in the book's Figure 3.54), then congestion avoidance.</p>";
 const M3_DRILLS=[
 {id:"m3cks",pages:"pp. 198–200 UDP segment structure and checksum (§3.3.1–3.3.2)",tag:"UDP · Internet checksum",title:"Compute a 16-bit checksum",gen(){

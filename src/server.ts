@@ -7,7 +7,7 @@ const server = Bun.serve({
   port,
   development,
   routes: {
-    "/": homepage,
+    "/*": homepage,
     "/health": new Response("ok"),
   },
   fetch() {

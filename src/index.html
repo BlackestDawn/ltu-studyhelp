@@ -12,20 +12,13 @@
 <script type="module" src="./client/main.js"></script>
 </head>
 <body>
-<header class="top"><div class="wrap">
-  <div class="eyebrow">Computer Networking · Kurose &amp; Ross 8e · Chapters 1–4</div>
-  <h1>Networks Midterm Workbench</h1>
-  <p class="lede">Learn by doing. Every lab generates fresh numbers, checks your answers, and shows a worked solution when you want it. Work the problem first, then open the solution.</p>
-  <div class="hdr" aria-hidden="true">
-    <div class="s2"><b>src</b>you</div><div class="s2"><b>dst</b>midterm</div><div class="s2"><b>proto</b>practice</div><div class="s2"><b>ttl</b>4 modules</div>
-    <div class="s4"><b>payload</b>labs · models · concept checks</div><div class="s4"><b>checksum</b>worked solutions</div>
-  </div>
+<header class="bar"><div class="wrap bar-in">
+  <a class="brand" href="/" data-link>Networks Midterm Workbench</a>
+  <details class="menu" id="menu"><summary>Modules</summary><ol></ol></details>
 </div></header>
 
-<nav class="tabs" aria-label="Modules"><div class="wrap" role="tablist" id="tabs"></div></nav>
+<div id="app"></div>
 
-<main><div class="wrap" id="panels"></div>
-<div class="wrap"><p class="foot">Progress counts and ticked objectives are saved in this browser only. Section numbers refer to the 8th edition of the course book. Labs follow the book's conventions; if your lecturer used a different convention (for example how TCP Reno sets cwnd after three duplicate ACKs), the lab says which rule it uses.</p></div>
-</main>
+<footer class="wrap"><p class="foot">Progress counts, ticked objectives and reading are saved in this browser only. Section numbers refer to the 8th edition of the course book. Labs follow the book's conventions; if your lecturer used a different convention (for example how TCP Reno sets cwnd after three duplicate ACKs), the lab says which rule it uses.</p></footer>
 </body>
 </html>

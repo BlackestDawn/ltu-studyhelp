@@ -1,5 +1,5 @@
-import { rnd, pick, fmt } from "../lib/util.js";
-import { bankDrill } from "../lib/drill.js";
+import { rnd, pick, fmt } from "../../lib/util.js";
+import { bankDrill } from "../../lib/drill.js";
 
 const M1_DRILLS=[
 {id:"m1delay",pages:"pp. 23–24 store-and-forward (§1.3.1) · pp. 35–39 types of delay (§1.4.1) · pp. 41–43 end-to-end delay (§1.4.3)",tag:"Delay · store-and-forward",title:"End-to-end delay over several links",gen(){
@@ -16,7 +16,7 @@ const M1_DRILLS=[
   return{q:`<p>A <b>${M} Mbit</b> message is sent from A to B across <b>${N} links</b> of <b>${R} Mbps</b> each, with store-and-forward routers between them. Ignore propagation, processing, queuing and header overhead.</p>`,
   fields:[{label:"Time if sent as one whole message",unit:"s",type:"num",ans:t1},{label:`Time if split into ${P} equal packets`,unit:"s",type:"num",ans:t2}],
   sol:`<p><b>Whole message:</b> each of the ${N} links must carry all ${M} Mbit before the next one can start: <code>${N} × ${M}/${R} = ${fmt(t1)} s</code>.</p>
-  <p><b>Packets:</b> each packet is ${fmt(Lp)} Mbit and takes <code>L/R = ${fmt(Lp/R)} s</code> per link. The first packet reaches B after <code>${N} × ${fmt(Lp/R)}</code> s. After that, one more packet arrives every <code>${fmt(Lp/R)}</code> s, because all links work in parallel on different packets (a pipeline). Total <code>(N + P − 1) × L/R = (${N}+${P}−1) × ${fmt(Lp/R)} = ${fmt(t2)} s</code>.</p><p>Try the pipeline model below to watch this happen.</p>`};}},
+  <p><b>Packets:</b> each packet is ${fmt(Lp)} Mbit and takes <code>L/R = ${fmt(Lp/R)} s</code> per link. The first packet reaches B after <code>${N} × ${fmt(Lp/R)}</code> s. After that, one more packet arrives every <code>${fmt(Lp/R)}</code> s, because all links work in parallel on different packets (a pipeline). Total <code>(N + P − 1) × L/R = (${N}+${P}−1) × ${fmt(Lp/R)} = ${fmt(t2)} s</code>.</p><p>The pipeline model in Study notes (§1.3) animates this.</p>`};}},
 {id:"m1queue",pages:"pp. 39–41 queuing delay, traffic intensity and packet loss (§1.4.2)",tag:"Delay · queuing",title:"Queuing delay and traffic intensity",gen(){
   const L=pick([1000,1500]),R=pick([1,10,100]),N=rnd(3,12);const dt=L*8/(R*1e6)*1e3,avg=(N-1)*dt/2;
   const It=pick([0.3,0.6,0.9,1.25,1.6]);const a=Math.round(It*R*1e6/(L*8));const I=L*8*a/(R*1e6);

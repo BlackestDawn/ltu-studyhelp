@@ -1,5 +1,5 @@
-import { rnd, pick, shuffle, ip2n, n2ip, maskOf, bin8, tbl } from "../lib/util.js";
-import { bankDrill } from "../lib/drill.js";
+import { rnd, pick, shuffle, ip2n, n2ip, maskOf, bin8, tbl } from "../../lib/util.js";
+import { bankDrill } from "../../lib/drill.js";
 
 const OF_OPTS=["forward(1)","forward(2)","forward(3)","forward(4)","drop","send to controller"];
 const M4_DRILLS=[
