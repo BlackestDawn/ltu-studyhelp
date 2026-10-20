@@ -15,11 +15,24 @@ export const SECTIONS = [
 
 const link = (m, sec, text) => `<a href="/${m.id}/${sec}" data-link>${text}</a>`;
 
+// Short lecture label ("Lecture 1") for a study-notes section, if the module maps lectures.
+const lectureOf = (m, noteId) => (m.lectures || []).find(l => l.notes.includes(noteId))?.title.split(":")[0];
+
+function lectures(m) {
+  if (!m.lectures?.length) return "";
+  const title = id => m.notes.find(n => n.id === id)?.title ?? id;
+  return `<section><h2>Lectures</h2><p class="sub">How this module's material maps onto the course lectures. Each topic links to its study notes.</p>
+    <div class="lectures">${m.lectures.map(l => `<div class="card lecture"><h3>${l.title}</h3><p class="pages"><b>Book</b> ${l.pages}</p>
+      <ul>${l.notes.map(id => `<li><a href="/${m.id}/notes#${m.id}-${id}" data-link>${title(id)}</a></li>`).join("")}</ul>
+      <p><b>Focus:</b> ${l.focus}</p><p class="callout"><b>Key takeaway:</b> ${l.takeaway}</p></div>`).join("")}</div></section>`;
+}
+
 function summary(m) {
   const s = m.summary;
   const el = document.createElement("div");
   el.innerHTML = `
   <section><h2>The big picture</h2><div class="prose">${s.big}</div></section>
+  ${lectures(m)}
   <section><h2>Key takeaways</h2><ol class="takeaways">${s.takeaways.map(t => `<li>${t}</li>`).join("")}</ol></section>
   <section><h2>Formula sheet</h2><p class="sub">Every formula used in this module's labs: what it means, what each symbol stands for, and when to reach for it.</p>
     <div class="tblwrap"><table class="formulas"><thead><tr><th>Formula</th><th>What it means</th><th>Use it when</th></tr></thead><tbody>
@@ -40,9 +53,9 @@ function notes(m) {
   const anchor = id => `${m.id}-${id}`;
   el.innerHTML = `
   <nav class="card toc" aria-label="Study notes contents"><div class="objhead">On this page</div><ol>
-    ${m.notes.map(n => `<li><a href="#${anchor(n.id)}">${n.title}</a> <span class="mono">${n.ref.split("·")[0].trim()}</span></li>`).join("")}
+    ${m.notes.map(n => `<li><a href="#${anchor(n.id)}">${n.title}</a> <span class="mono">${n.ref.split("·")[0].trim()}${lectureOf(m, n.id) ? ` · ${lectureOf(m, n.id).replace("Lecture ", "L")}` : ""}</span></li>`).join("")}
     <li><a href="#${anchor("terms")}">Key terms</a></li></ol></nav>
-  ${m.notes.map(n => `<section class="note" id="${anchor(n.id)}"><h2>${n.title}</h2><p class="pages"><b>Book</b> ${n.ref}</p>
+  ${m.notes.map(n => `<section class="note" id="${anchor(n.id)}"><h2>${n.title}</h2><p class="pages"><b>Book</b> ${n.ref}${lectureOf(m, n.id) ? ` · <b>${lectureOf(m, n.id)}</b>` : ""}</p>
     <p class="gist">${n.gist}</p><div class="prose">${n.body}</div><div data-widget="${n.id}"></div></section>`).join("")}
   <section class="note" id="${anchor("terms")}"><h2>Key terms</h2>
     <div class="controls"><label>Filter <input type="search" data-filter placeholder="e.g. delay" autocomplete="off"></label><span class="mono" data-count></span></div>

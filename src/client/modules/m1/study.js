@@ -11,11 +11,12 @@ summary: {
     "A <b>protocol</b> defines the format and order of messages, and the actions taken when a message is sent or received.",
     "<b>Packet switching</b> shares links on demand and uses store-and-forward. <b>Circuit switching</b> reserves a fixed rate along the whole path for the whole session.",
     "Packet switching wins for bursty users through <b>statistical multiplexing</b>. The price is queuing delay and possible loss.",
+    "The core has two key functions: <b>forwarding</b> (local: input link to output link, using the forwarding table) and <b>routing</b> (global: computing the paths).",
     "Each hop adds four delays: processing, queuing, <b>transmission (L/R)</b> and <b>propagation (d/s)</b>. Transmission depends on packet size and link rate; propagation depends on distance.",
     "Queuing depends on <b>traffic intensity La/R</b>. Delay grows sharply as it approaches 1 and without bound above 1. Full buffers drop packets.",
     "End-to-end <b>throughput</b> is set by the slowest (bottleneck) link on the path.",
     "Five layers, five names for the data unit: <b>message</b>, <b>segment</b>, <b>datagram</b>, <b>frame</b>, bits. Hosts run all five layers, routers three, link-layer switches two.",
-    "Common attacks: malware and botnets, denial of service, packet sniffing and IP spoofing.",
+    "Common attacks: malware and botnets, denial of service, packet sniffing and IP spoofing. Each has a matching defence: encryption against sniffing, authentication against spoofing, integrity checks against tampering, access control against unauthorised use, firewalls against unwanted traffic.",
   ],
   formulas: [
     ["d_trans = L / R", "Time to push all L bits of a packet onto a link of rate R bits/s.", "Packet size and link rate are given. Remember bytes × 8.", [["L", "packet length, in bits (bytes × 8)"], ["R", "link transmission rate, in bits/s"]]],
@@ -39,19 +40,22 @@ summary: {
     "Adding or averaging link rates for throughput. It is the minimum.",
     "Saying a router implements the transport layer. Routers stop at the network layer; link-layer switches stop at the link layer.",
     "Unit slips: km vs m, ms vs s. Write units in every step.",
+    "Confusing forwarding (one router, local, fast) with routing (whole network, global).",
+    "Misreading traceroute: each RTT is a round trip and includes queuing, so RTTs need not grow hop by hop, and * means no reply, not that the path is broken.",
   ],
 },
 notes: [
 {id: "internet", title: "What is the Internet?", ref: "§1.1 · pp. 1–9",
  gist: "It can be described in two ways: by the hardware and software it is built from, and by the services it provides to applications.",
  body: `<p><b>Nuts-and-bolts view.</b> The Internet connects billions of computing devices called <b>hosts</b> or <b>end systems</b>. They are joined by <b>communication links</b> (copper wire, coaxial cable, optical fibre, radio) and <b>packet switches</b>. The two main kinds of packet switch are <b>routers</b>, mostly used in the network core, and <b>link-layer switches</b>, mostly used in access networks. A link's <b>transmission rate</b> is measured in bits per second.</p>
- <p>A sending host splits its data into chunks and adds a header to each one, producing <b>packets</b>. The sequence of links and switches a packet crosses is its <b>route</b> or <b>path</b>. Hosts reach the Internet through <b>ISPs</b> (Internet Service Providers): residential, university, company and mobile providers. Each ISP is itself a network of switches and links, and smaller ISPs connect to larger national and international ones.</p>
+ <p>A sending host splits its data into chunks and adds a <b>header</b> to each one, producing <b>packets</b>. The header carries protocol information, and the protocol in use decides what goes in it. The sequence of links and switches a packet crosses is its <b>route</b> or <b>path</b>. Hosts reach the Internet through <b>ISPs</b> (Internet Service Providers): residential, university, company and mobile providers. Each ISP is itself a network of switches and links, and smaller ISPs connect to larger national and international ones.</p>
  <p>Everything is controlled by <b>protocols</b>. The two most important are <b>TCP</b> (Transmission Control Protocol) and <b>IP</b> (Internet Protocol), together called TCP/IP. Internet standards are developed by the IETF and published as <b>RFCs</b> (Requests for Comments).</p>
  <p><b>Services view.</b> The Internet is infrastructure that serves <b>distributed applications</b>: programs running on several end systems that exchange data, such as the Web, video streaming, email and games. These programs run only on end systems, never inside routers. Programs use a <b>socket interface</b> to ask the Internet to deliver data to a program on another host, much like the postal service has rules for how to address a letter.</p>
  <div class="callout"><b>What is a protocol?</b> A protocol defines the <b>format</b> and the <b>order</b> of messages exchanged between two or more communicating entities, and the <b>actions</b> taken when a message is sent or received. Compare asking a stranger for the time: you say “hi”, wait for “hi” back, then ask. If the reply is “leave me alone”, you act differently. Network protocols work the same way, only between machines.</div>`},
 {id: "edge", title: "The network edge", ref: "§1.2 · pp. 9–21",
  gist: "End systems, and the access networks that connect them to their first router (the edge router).",
- body: `<p>End systems are often divided into <b>clients</b> (laptops, phones) and <b>servers</b> (powerful machines that store and send web pages, video and email, usually in large <b>data centres</b>). The <b>access network</b> is what physically connects an end system to its edge router.</p>
+ body: `<p>End systems are called <b>hosts</b> because they host, that is run, network applications. A host can be a <b>client</b> that requests a service (a laptop or phone) or a <b>server</b> that provides one (a powerful machine that stores and sends web pages, video and email, usually in a large <b>data centre</b>). The <b>access network</b> is what physically connects a host to its first router, the edge router.</p>
+ <p><b>Sending data.</b> The host breaks application data into packets of <b>L bits</b> and transmits them into the access network at the link's <b>transmission rate R</b> (bits/s), so pushing out one packet takes L/R seconds. R depends on the access technology: wired Ethernet can run at gigabits per second, while a cellular link may give only a few megabits per second.</p>
  <ul>
  <li><b>DSL</b> reuses the telephone line to the phone company's local office, where a <b>DSLAM</b> separates data from phone calls. Downstream data, upstream data and the phone call use separate frequency bands on the same wire. Download is faster than upload, and rates fall with distance from the office.</li>
  <li><b>Cable</b> reuses the cable-TV network: fibre to the neighbourhood, then coaxial cable to each home (<b>hybrid fibre-coax, HFC</b>). A cable modem talks to the <b>CMTS</b> at the cable company, following the DOCSIS standard. Cable is a <b>shared broadcast medium</b>: every home on a segment receives every downstream packet, and neighbours share the upstream channel, so speeds drop when many people are busy.</li>
@@ -63,9 +67,15 @@ notes: [
  <p><b>Physical media.</b> <i>Guided</i> media carry signals in a solid medium: twisted-pair copper, coaxial cable and optical fibre. Fibre supports very high rates, loses little signal over long distances and is immune to electromagnetic interference. <i>Unguided</i> media carry signals through the air: terrestrial radio and satellites. A geostationary satellite sits 36,000 km up, which adds about 280 ms of propagation delay. The cost of the actual cable is usually small compared to the labour of installing it.</p>`},
 {id: "core", title: "The network core", ref: "§1.3 · pp. 22–34",
  gist: "Packet switching sends packets through shared links on demand. Circuit switching reserves a path in advance.",
- body: `<p><b>Store-and-forward.</b> A router must receive the <i>entire</i> packet before it starts sending it on the next link. Sending one packet of L bits over N links of rate R therefore takes N·L/R (ignoring propagation). With many packets the links work in parallel, like a pipeline: P packets need (N + P − 1)·L/R. The model below shows this.</p>
+ body: `<p><b>Packet switching</b> is the technological basis of the Internet; the traditional telephone network was built on <b>circuit switching</b> instead (below). Hosts send packets, and the routers of the core pass them along, link by link, towards the destination.</p>
+ <p><b>Store-and-forward.</b> A router must receive the <i>entire</i> packet before it starts sending it on the next link. Sending one packet of L bits over N links of rate R therefore takes N·L/R (ignoring propagation). With many packets the links work in parallel, like a pipeline: P packets need (N + P − 1)·L/R. The model below shows this.</p>
  <p><b>Queues and loss.</b> Each router output link has an <b>output buffer</b>. If a packet arrives while the link is busy, it waits there (<b>queuing delay</b>). If the buffer is full, the packet is dropped (<b>packet loss</b>).</p>
- <p><b>Forwarding tables and routing.</b> Each router has a <b>forwarding table</b> that maps destination addresses (or parts of them) to output links. <b>Routing protocols</b> fill these tables in automatically. Think of a driver who asks for directions at every junction instead of carrying a full map.</p>
+ <p><b>The two key functions of the core.</b></p>
+ <ul>
+ <li><b>Forwarding</b> (also called <b>switching</b>) is a <i>local</i> action inside one router: move an arriving packet from its input link to the right output link. Each router has a <b>forwarding table</b> that maps destination addresses (or parts of them) to output links.</li>
+ <li><b>Routing</b> is a <i>global</i> action: work out the source-to-destination paths that packets take. <b>Routing algorithms and protocols</b> compute these paths and fill in the forwarding tables automatically.</li>
+ </ul>
+ <p>Think of a driver who asks for directions at every junction (forwarding) instead of carrying a map of the whole trip (routing).</p>
  <p><b>Circuit switching</b>, used by the traditional telephone network, reserves resources (buffer space and link rate) along the whole path for the duration of a call. The sender gets a guaranteed constant rate. A link is divided between circuits by <b>FDM</b> (each circuit gets its own frequency band) or <b>TDM</b> (time is divided into frames, and each circuit gets one slot in every frame). Reserved capacity is wasted whenever a user is silent.</p>
  <div class="callout ex"><b>Worked example.</b> A 1 Mbps link is shared by users who each need 100 kbps while active and are active 10% of the time. Circuit switching fits 1 Mbps ÷ 100 kbps = <b>10 users</b>. With packet switching and <b>35 users</b>, the chance that more than 10 are active at the same moment is only about 0.0004. So packet switching serves three and a half times as many users with almost the same performance. This is <b>statistical multiplexing</b>.</div>
  <p><b>A network of networks.</b> Access ISPs buy connectivity from <b>regional ISPs</b>, which buy from <b>tier-1 ISPs</b> with global reach (for example Level 3, AT&amp;T, Sprint, NTT). The customer pays the provider. ISPs connect to providers at <b>points of presence (PoPs)</b>, may connect to several providers at once (<b>multi-homing</b>), and exchange traffic directly with ISPs at the same level without payment (<b>peering</b>), often at an <b>Internet exchange point (IXP)</b>. Large <b>content providers</b> such as Google run their own global networks and peer directly with lower-tier ISPs, bypassing the upper tiers.</p>`,
@@ -80,11 +90,21 @@ notes: [
  </tbody></table></div>
  <div class="callout"><b>Car caravan analogy.</b> Ten cars travel together. Toll booths are 100 km apart, each booth takes 12 s per car, and cars drive at 100 km/h. Getting the whole caravan through a booth takes 10 × 12 = 120 s: that is <i>transmission</i> (cars are bits, the booth is the link). Driving 100 km to the next booth takes 1 hour: that is <i>propagation</i>. The caravan reaches the next booth after 62 minutes.</div>
  <p><b>Queuing and loss.</b> If packets of L bits arrive at an average rate of a packets per second on a link of rate R, the <b>traffic intensity</b> is La/R. Above 1, bits arrive faster than they can leave, so the queue grows until packets are dropped. Below 1, delay depends on how bursty arrivals are, and it climbs very steeply as La/R approaches 1. Because buffers are finite, a growing share of packets are lost as intensity rises.</p>
- <p><b>End-to-end delay.</b> With N links of equal rate and no queuing, the total is N(d_proc + d_trans + d_prop). The <b>traceroute</b> program measures real delays by sending probe packets that expire at each router in turn; every router replies, and traceroute prints the round-trip time to each one.</p>
- <p><b>Throughput</b> is the rate (bits/s) at which the receiver actually gets data, either at one instant or on average (file size ÷ transfer time). On a path, it is the rate of the slowest link: the <b>bottleneck</b>. Core links are usually over-provisioned, so the bottleneck is typically an access link. A core link shared by n flows gives each about R/n.</p>`},
+ <p><b>End-to-end delay.</b> With N links of equal rate and no queuing, the total is N(d_proc + d_trans + d_prop).</p>
+ <p><b>Measuring real paths with traceroute.</b> Traceroute sends <b>three probe packets</b> to the first router on the path, then three to the second, and so on to the destination. Each router sends a reply to every probe, and traceroute prints the <b>round-trip time (RTT)</b> of each of the three. An RTT includes all four kinds of delay, in both directions, on every link up to that router.</p>
+ <pre class="msg"> 5  core1.example.net (192.0.2.1)    11.2 ms  10.9 ms  11.4 ms
+ 6  core2.example.net (198.51.100.7) 24.8 ms  25.3 ms  24.9 ms
+ 7  * * *
+ 8  edge.example.org (203.0.113.9)   23.7 ms  24.1 ms  24.0 ms</pre>
+ <ul>
+ <li>A <b>*</b> means no reply came back for that probe: the probe or the reply was lost, or the router does not answer probes. No RTT can be measured, but later hops can still reply, as hop 8 does above.</li>
+ <li>A later hop can show a <i>smaller</i> RTT than an earlier one (hop 8 vs hop 6), because queuing delay changes from moment to moment.</li>
+ <li>A big jump between two hops usually means a long link, such as a transatlantic cable.</li>
+ </ul>
+ <p><b>Throughput</b> is the rate (bits/s) at which the receiver actually gets data, either at one instant or on average (file size ÷ transfer time). On a path, it is the rate of the slowest link: the <b>bottleneck</b>. Think of water flowing through a series of pipes: the flow is limited by the thinnest pipe, however wide the others are. Core links are usually over-provisioned, so the bottleneck is typically an access link. A core link shared by n flows gives each about R/n.</p>`},
 {id: "layers", title: "Protocol layers and encapsulation", ref: "§1.5 · pp. 47–54",
  gist: "Five layers, each providing a service to the layer above it and adding its own header.",
- body: `<p>Layering splits a complicated system into parts that each do one job and offer a <b>service</b> to the layer above. Compare air travel: ticket purchase, baggage check, gates, runway and flight routing are separate steps, and each one can change without affecting the others. The main benefit is <b>modularity</b>. The downsides are that layers can duplicate work (for example error checking at several layers) and that a layer sometimes needs information that only another layer has.</p>
+ body: `<p>Layering splits a complicated system into parts that each do one job. Each layer offers a <b>service</b> to the layer above, and builds it using the services of the layer below plus its own actions. Compare air travel: ticket purchase, baggage check, gates, runway and flight routing are separate steps, and each one can change without affecting the others. The main benefit is <b>modularity</b>: as long as a layer keeps offering the same service through the same interface, its implementation can change and the change stays local to that layer. Note that layering does not by itself make delivery reliable; that is a service a particular layer (for example TCP) chooses to provide. The downsides are that layers can duplicate work (for example error checking at several layers) and that a layer sometimes needs information that only another layer has.</p>
  <div class="tblwrap"><table><thead><tr><th>Layer</th><th>Job</th><th>Example protocols</th><th>Data unit</th><th>Runs in</th></tr></thead><tbody>
  <tr><td>Application</td><td>Network applications and their protocols</td><td>HTTP, SMTP, DNS</td><td>Message</td><td>End systems</td></tr>
  <tr><td>Transport</td><td>Carries messages between processes</td><td>TCP, UDP</td><td>Segment</td><td>End systems</td></tr>
@@ -102,7 +122,15 @@ notes: [
  <li><b>Packet sniffing</b>: a passive receiver records a copy of every packet that passes by. It is easy on wireless and other broadcast media and hard to detect because it sends nothing. The defence is encryption.</li>
  <li><b>IP spoofing</b>: putting a false source address in a packet so it seems to come from someone else. The defence is <b>end-point authentication</b>: checking that a message really comes from where it claims to.</li>
  </ul>
- <p><b>Why is the Internet so exposed?</b> It was originally built for “a group of mutually trusting users attached to a transparent network”. Nothing in the original design checked who sent what, so security has been added on top ever since.</p>`},
+ <p><b>Why is the Internet so exposed?</b> It was originally built for “a group of mutually trusting users attached to a transparent network”. Security was not consciously a design criterion, so nothing in the original design checked who sent what. Protection has been added on top ever since, at several layers.</p>
+ <p><b>Matching defences to threats.</b></p>
+ <div class="tblwrap"><table><thead><tr><th>Threat</th><th>Defence</th><th>How it helps</th></tr></thead><tbody>
+ <tr><td>Packet sniffing (reading data)</td><td><b>Encryption</b></td><td>Keeps contents confidential: a sniffer only sees scrambled data.</td></tr>
+ <tr><td>IP spoofing, impersonation</td><td><b>Authentication</b></td><td>Makes the other side prove who it is.</td></tr>
+ <tr><td>Tampering with data in transit</td><td><b>Integrity checks</b>, <b>digital signatures</b></td><td>Detect that a message was changed.</td></tr>
+ <tr><td>Unauthorised use of resources</td><td><b>Access control</b></td><td>Defines who may take which actions, after they have proved their identity.</td></tr>
+ <tr><td>DoS floods, malware, unwanted traffic</td><td><b>Firewalls</b>, intrusion detection</td><td>Filter traffic and detect or stop attacks before they reach hosts.</td></tr>
+ </tbody></table></div>`},
 ],
 glossary: [
   ["Host / end system", "A device at the edge of the network that runs applications: a laptop, phone, server or IoT device."],
@@ -112,6 +140,8 @@ glossary: [
   ["Router", "A packet switch that forwards packets using network-layer (IP) addresses; implements layers 1–3."],
   ["Link-layer switch", "A packet switch that forwards frames using link-layer (MAC) addresses; implements layers 1–2."],
   ["Store-and-forward", "A switch receives the whole packet before it starts sending it on the next link."],
+  ["Forwarding (switching)", "A router's local action of moving an arriving packet from its input link to the right output link."],
+  ["Routing", "The network-wide (global) task of determining the paths packets take from source to destination."],
   ["Forwarding table", "A router's table mapping destination addresses to output links."],
   ["Routing protocol", "A protocol that routers use to compute and fill in their forwarding tables automatically."],
   ["Circuit switching", "Reserving a fixed rate on every link of a path for the whole session, as in the telephone network."],
@@ -129,6 +159,8 @@ glossary: [
   ["Traffic intensity", "La/R: the ratio of the rate bits arrive at a link to the rate it can send them."],
   ["Throughput", "The rate at which a receiver actually gets data, in bits/s."],
   ["Bottleneck link", "The slowest link on a path, which limits end-to-end throughput."],
+  ["Traceroute", "A program that sends three probes to each router on a path and prints the round-trip time of each reply."],
+  ["RTT", "Round-trip time: from sending a packet until its reply arrives."],
   ["Protocol", "Rules for the format and order of messages, and the actions taken on sending or receiving them."],
   ["Service model", "What a layer promises to the layer above it."],
   ["Encapsulation", "Each layer wrapping the data from the layer above in its own header."],
@@ -138,5 +170,10 @@ glossary: [
   ["DDoS", "Distributed denial of service: flooding a target from many sources at once."],
   ["Packet sniffer", "A passive receiver that records a copy of every packet it can see."],
   ["IP spoofing", "Sending packets with a forged source IP address."],
+  ["Encryption", "Scrambling data so only the intended receiver can read it; the defence against sniffing."],
+  ["Authentication", "Proving who you are; the defence against spoofing and impersonation."],
+  ["Integrity check / digital signature", "Lets the receiver detect that a message was changed in transit."],
+  ["Access control", "Rules for who may take which actions on network resources."],
+  ["Firewall", "A device or program that filters traffic to block unwanted or malicious packets."],
 ],
 };

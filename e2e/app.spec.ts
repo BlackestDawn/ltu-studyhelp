@@ -142,3 +142,12 @@ test("formula sheets explain their symbols", async ({ page }) => {
     expect(await withVars.count(), id).toBeGreaterThanOrEqual((await rows.count()) - 1);
   }
 });
+
+test("module 1 maps its lectures to study notes", async ({ page }) => {
+  await page.goto("/m1");
+  await expect(page.locator(".lecture")).toHaveCount(2);
+  await page.locator(".lecture").nth(1).getByRole("link", { name: "Networks under attack" }).click();
+  await expect(page).toHaveURL(/\/m1\/notes#m1-security$/);
+  await expect(page.locator("#m1-security")).toBeInViewport();
+  await expect(page.locator("#m1-security .pages")).toContainText("Lecture 2");
+});
