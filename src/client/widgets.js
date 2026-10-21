@@ -1,4 +1,7 @@
-import { $ } from "./lib/util.js";
+import { $, store } from "./lib/util.js";
+
+// Each model remembers its settings in this browser between visits.
+const kept=k=>({get:()=>store.get("w:"+k)||{},set:v=>store.set("w:"+k,v)});
 import { cwndTrace } from "./lib/cwnd.js";
 
 export function widgetPipeline(){
@@ -14,14 +17,16 @@ export function widgetPipeline(){
       for(let i=0;i<P;i++){const t=i+j;s+=`<rect class="blk${i%2?" alt":""}" x="${x0+t*cw+2}" y="${y0+j*rh+3}" width="${cw-4}" height="${rh-6}" rx="3"/><text class="blktxt" x="${x0+t*cw+cw/2}" y="${y0+j*rh+rh/2+4}" text-anchor="middle">${i+1}</text>`;}}
     $("#pl-svg",el).innerHTML=s;
     $("#pl-out",el).innerHTML=`${P} packet${P>1?"s":""} over ${N} link${N>1?"s":""}: (N + P − 1) = <b>${T}</b> slots of L/R. The same data as one big message would take N × P = <b>${N*P}</b> slots.`;};
-  el.addEventListener("input",draw);draw();return el;
+  const keep=kept("pipeline"),st=keep.get();
+  if(st.n)$("#pl-n",el).value=st.n;if(st.p)$("#pl-p",el).value=st.p;
+  el.addEventListener("input",()=>{draw();keep.set({n:+$("#pl-n",el).value,p:+$("#pl-p",el).value});});draw();return el;
 }
 export function widgetDNS(){
   const el=document.createElement("article");el.className="card";
   const nodes={host:{x:70,y:200,t:"Requesting host",s:"cse.nyu.edu"},local:{x:230,y:200,t:"Local DNS",s:"dns.nyu.edu"},root:{x:300,y:52,t:"Root server",s:""},tld:{x:520,y:52,t:".edu TLD server",s:""},auth:{x:540,y:200,t:"Authoritative",s:"dns.umass.edu"}};
   const IT=[["host","local","Query: address of gaia.cs.umass.edu? The host asks its local server to do the work (a recursive request)."],["local","root","The local server asks a root server."],["root","local","Root: “I don't know, but here are the .edu TLD servers.” (referral)"],["local","tld","The local server asks a .edu TLD server."],["tld","local","TLD: “Ask umass.edu's authoritative server, dns.umass.edu.” (referral)"],["local","auth","The local server asks the authoritative server."],["auth","local","Answer: gaia.cs.umass.edu A 128.119.245.12"],["local","host","The local server returns the answer and caches it, along with the TLD and authoritative server addresses."]];
   const RC=[["host","local","Query from the host to its local server."],["local","root","The local server asks the root, and the root takes on the job itself (recursive)."],["root","tld","The root asks the .edu TLD server on the local server's behalf."],["tld","auth","The TLD asks the authoritative server."],["auth","tld","Answer goes back to the TLD…"],["tld","root","…back to the root…"],["root","local","…back to the local server."],["local","host","The host gets the answer. This puts heavy load on the root and TLD servers, so in practice queries from the local server are usually iterative."]];
-  let mode="it",step=0;
+  const keep=kept("dns"),st=keep.get();let mode=st.mode==="rc"?"rc":"it",step=Number.isInteger(st.step)?Math.max(0,Math.min(8,st.step)):0;
   el.innerHTML=`<div class="dhead"><span class="tag">Model · DNS resolution</span><h3>Step through a DNS lookup</h3><p class="pages"><b>Builds on</b> pp. 125–131 how DNS works: hierarchy, iterative and recursive queries, caching (§2.4.2)</p></div>
   <div class="controls"><label for="dns-mode">Query style <select id="dns-mode"><option value="it">Iterative (as in practice)</option><option value="rc">Fully recursive</option></select></label><button class="btn" data-d="-1">← Back</button><button class="btn primary" data-d="1">Next message →</button><button class="btn ghost" data-d="0">Restart</button></div>
   <div class="svgbox"><svg id="dns-svg" viewBox="0 0 640 250" role="img" aria-label="DNS servers and messages"><defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker><marker id="ahg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--line)"/></marker></defs><g id="dns-g"></g></svg></div>
@@ -39,6 +44,8 @@ export function widgetDNS(){
     $("#dns-out",el).innerHTML=step?`<b>Message ${step} of ${seq.length}:</b> ${seq[step-1][2]}`:`Resolving <b>gaia.cs.umass.edu</b> with empty caches. Press “Next message”.`;};
   el.addEventListener("click",e=>{const b=e.target.closest("[data-d]");if(!b)return;const d=+b.dataset.d;step=d===0?0:Math.max(0,Math.min(8,step+d));draw();});
   $("#dns-mode",el).addEventListener("change",e=>{mode=e.target.value;step=0;draw();});
+  $("#dns-mode",el).value=mode;
+  el.addEventListener("click",()=>keep.set({mode,step}));el.addEventListener("change",()=>keep.set({mode,step}));
   draw();return el;
 }
 export function widgetCwnd(){
@@ -49,7 +56,10 @@ export function widgetCwnd(){
   <div class="controls"><button class="btn primary" data-e="ok">Next RTT: all ACKed</button><button class="btn" data-e="3dup">3 duplicate ACKs</button><button class="btn" data-e="to">Timeout</button><button class="btn ghost" data-e="undo">Undo</button><button class="btn ghost" data-e="reset">Reset</button><button class="btn ghost" data-e="demo">Load example</button></div>
   <div class="svgbox"><svg id="cw-svg" viewBox="0 0 640 290" role="img" aria-label="Congestion window per round"></svg></div>
   <div class="readout" id="cw-out"></div>`;
-  let ev={},rounds=1;
+  const keep=kept("cwnd"),st=keep.get();
+  let ev=st.ev&&typeof st.ev==="object"?st.ev:{},rounds=Number.isInteger(st.rounds)?Math.max(1,Math.min(40,st.rounds)):1;
+  if(st.ss)$("#cw-ss",el).value=st.ss;if(st.v)$("#cw-var",el).value=st.v;if(st.p3)$("#cw-p3",el).value=st.p3;
+  const save=()=>keep.set({ev,rounds,ss:$("#cw-ss",el).value,v:$("#cw-var",el).value,p3:$("#cw-p3",el).value});
   const draw=()=>{const S0=Math.max(2,Math.min(64,+$("#cw-ss",el).value||8)),v=$("#cw-var",el).value,p3=$("#cw-p3",el).value==="1";
     const rows=cwndTrace(S0,ev,rounds,v,p3);const W=640,H=290,ml=40,mr=14,mt=30,mb=36,n=Math.max(rows.length,16);
     const ymaxRaw=Math.max(8,...rows.map(r=>Math.max(r.cw,r.ss)))+2,step=ymaxRaw<=14?2:ymaxRaw<=28?4:ymaxRaw<=56?8:16,ymax=Math.ceil(ymaxRaw/step)*step;
@@ -66,8 +76,8 @@ export function widgetCwnd(){
   el.addEventListener("click",e=>{const b=e.target.closest("[data-e]");if(!b)return;const k=b.dataset.e;
     if(k==="reset"){ev={};rounds=1;}else if(k==="undo"){if(rounds>1){rounds--;delete ev[rounds];}}
     else if(k==="demo"){$("#cw-ss",el).value=8;ev={8:"3dup",14:"to"};rounds=22;}
-    else{if(rounds>=40)return;if(k!=="ok")ev[rounds]=k;rounds++;}draw();});
-  el.addEventListener("change",draw);draw();return el;
+    else{if(rounds>=40)return;if(k!=="ok")ev[rounds]=k;rounds++;}draw();save();});
+  el.addEventListener("change",()=>{draw();save();});draw();return el;
 }
 export function widgetIPv4(){
   const el=document.createElement("article");el.className="card";
@@ -82,6 +92,7 @@ export function widgetIPv4(){
   <div class="svgbox"><div class="bits"><span>bit 0</span><span>8</span><span>16</span><span>24</span><span>31</span></div><div class="ipgrid">${rows.flat().map(([n,b],i)=>`<button class="ipf" style="grid-column:span ${b}" data-i="${i}" aria-pressed="false">${n}</button>`).join("")}</div></div>
   <div class="ipdesc" id="ip-desc" aria-live="polite">The first five rows (20 bytes) are the fixed part of the header.</div>`;
   const flat=rows.flat();
-  el.addEventListener("click",e=>{const b=e.target.closest(".ipf");if(!b)return;el.querySelectorAll(".ipf").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");const f=flat[+b.dataset.i];$("#ip-desc",el).innerHTML=`<b>${f[0]}</b> (${f[1]} bits). ${f[2]}`;});
+  el.addEventListener("click",e=>{const b=e.target.closest(".ipf");if(!b)return;el.querySelectorAll(".ipf").forEach(x=>x.setAttribute("aria-pressed","false"));b.setAttribute("aria-pressed","true");const f=flat[+b.dataset.i];$("#ip-desc",el).innerHTML=`<b>${f[0]}</b> (${f[1]} bits). ${f[2]}`;kept("ipv4").set({i:+b.dataset.i});});
+  const sel=kept("ipv4").get().i;if(Number.isInteger(sel))el.querySelector(`.ipf[data-i="${sel}"]`)?.click();
   return el;
 }

@@ -2,7 +2,7 @@
 
 Study app for *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–4. Each module has a summary, study notes with interactive models, labs that generate fresh numbers and show worked solutions, a concept check, and links to further resources.
 
-Everything runs in the browser. Progress and ticked objectives are saved in `localStorage`, so they stay on the viewer's own device.
+Everything runs in the browser. Progress, ticked objectives, lab answers, concept-check picks, model settings and the reading position on each page are saved in `localStorage`, so they stay on the viewer's own device and survive reloads and app updates.
 
 ## Running locally
 
@@ -78,6 +78,10 @@ Each module page has five sections, each with its own URL:
 2. Import it in `modules/index.js` and append it to `MODULES`.
 
 Interactive models are plain functions in `widgets.js` that return an element; attach one to a study-notes section with `widget: widgetName`.
+
+### Saved state and updates
+
+A visitor's lab problems, typed answers and concept-check picks are saved with a fingerprint of the lab's title, tag and pages (or of the question's text and options). If an update changes those, the saved state for that lab or question is dropped and it starts fresh. If you change only a lab's generator logic, for example to fix a wrong answer, add or bump `v` on that lab (`{id: "m1delay", v: 2, …}`) so visitors don't keep an old, saved problem.
 
 ## Course book
 

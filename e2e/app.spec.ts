@@ -175,3 +175,80 @@ test("concept check shuffles options and still marks the right answer", async ({
   await page.click("[data-reset]");
   expect(await order()).not.toBe(before);
 });
+
+test.describe("state survives a reload", () => {
+  test("reading position", async ({ page }) => {
+    await page.goto("/m1/notes");
+    // Put the reader 120px into the "Delay, loss and throughput" section, just below the sticky tabs.
+    await page.evaluate(() => {
+      const tabs = document.querySelector("nav.tabs")!.getBoundingClientRect().bottom;
+      const top = document.getElementById("m1-delay")!.getBoundingClientRect().top + scrollY;
+      scrollTo(0, top - tabs + 120);
+    });
+    await page.waitForTimeout(400); // scroll saves are debounced
+    const before = await page.evaluate(() => scrollY);
+    await page.reload();
+    await expect.poll(() => page.evaluate(() => scrollY)).toBeGreaterThan(before - 5);
+    expect(Math.abs((await page.evaluate(() => scrollY)) - before)).toBeLessThan(5);
+  });
+
+  test("lab: same numbers, answers, solution and result; progress not counted twice", async ({ page }) => {
+    await page.goto("/m1/labs");
+    const drill = page.locator("#d-m1layers");
+    await drill.locator('[data-act="sol"]').click();
+    const answers = await drill.locator(".sol .key li code").allTextContents();
+    const question = await drill.locator(".fld label").allTextContents();
+    for (const [i, a] of answers.entries()) await drill.locator(".fields select").nth(i).selectOption(a);
+    await drill.locator('[data-act="check"]').click();
+    await expect(page.locator('.tab[data-sec="labs"] .sc')).toHaveText("1 solved");
+    await page.reload();
+    expect(await drill.locator(".fld label").allTextContents()).toEqual(question);
+    for (const [i, a] of answers.entries()) await expect(drill.locator(".fields select").nth(i)).toHaveValue(a);
+    await expect(drill.locator(".sol")).toBeVisible();
+    await expect(drill.locator(".feedback")).toHaveText(`All ${answers.length} correct.`);
+    await expect(drill.locator(".mark.ok")).toHaveCount(answers.length);
+    await expect(page.locator('.tab[data-sec="labs"] .sc')).toHaveText("1 solved");
+    // A typed but unchecked answer is kept too.
+    const delay = page.locator("#d-m1delay");
+    await delay.locator(".fields input").first().fill("0,5");
+    await page.reload();
+    await expect(delay.locator(".fields input").first()).toHaveValue("0,5");
+  });
+
+  test("concept check: picks and option order", async ({ page }) => {
+    await page.goto("/m2/quiz");
+    const items = page.locator(".mcq > li");
+    await items.nth(0).locator(".opt").nth(2).click();
+    await items.nth(5).locator(".opt").nth(0).click();
+    const order = await items.locator(".opt").allTextContents();
+    const score = await page.locator("[data-score]").textContent();
+    await page.reload();
+    expect(await items.locator(".opt").allTextContents()).toEqual(order);
+    await expect(page.locator("[data-score]")).toHaveText(score!);
+    await expect(items.nth(0).locator(".why")).toBeVisible();
+    await expect(items.nth(1).locator(".why")).toBeHidden();
+    // Reset clears the saved answers.
+    await page.click("[data-reset]");
+    await page.reload();
+    await expect(page.locator("[data-score]")).toContainText("0/0 right");
+  });
+
+  test("interactive models and glossary filter", async ({ page }) => {
+    await page.goto("/m3/notes");
+    await page.click('[data-e="demo"]');
+    const cwnd = await page.textContent("#cw-out");
+    await page.fill("[data-filter]", "window");
+    const count = await page.textContent("[data-count]");
+    await page.goto("/m2/notes");
+    await page.selectOption("#dns-mode", "rc");
+    await page.click('#m2-dns [data-d="1"]');
+    await page.click('#m2-dns [data-d="1"]');
+    await page.goto("/m3/notes");
+    await expect(page.locator("#cw-out")).toHaveText(cwnd!);
+    await expect(page.locator("[data-filter]")).toHaveValue("window");
+    await expect(page.locator("[data-count]")).toHaveText(count!);
+    await page.goto("/m2/notes");
+    await expect(page.locator("#dns-mode")).toHaveValue("rc");
+    await expect(page.locator("#dns-out")).toContainText("Message 2 of 8");
+  });
+});

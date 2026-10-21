@@ -1,5 +1,5 @@
 // The five views of a module: summary, study notes, labs, concept check, resources.
-import { $, esc } from "../lib/util.js";
+import { $, esc, store } from "../lib/util.js";
 import { checkbox, bindChecklists } from "../lib/checklist.js";
 import { renderDrill } from "../lib/drill.js";
 import { renderMCQ } from "../lib/mcq.js";
@@ -68,8 +68,11 @@ function notes(m) {
     items.forEach(it => { const on = !q || it.textContent.toLowerCase().includes(q); it.hidden = !on; shown += on; });
     count.textContent = `${shown} of ${items.length} terms`;
   };
-  $("[data-filter]", el).addEventListener("input", e => filter(e.target.value));
-  filter("");
+  // The filter text is remembered per module in this browser.
+  const box = $("[data-filter]", el), saved = store.get(`gloss:${m.id}`, "");
+  box.value = saved;
+  box.addEventListener("input", e => { filter(e.target.value); store.set(`gloss:${m.id}`, e.target.value); });
+  filter(saved);
   return el;
 }
 
@@ -83,7 +86,7 @@ function labs(m) {
 
 function quiz(m) {
   const el = document.createElement("div");
-  el.appendChild(renderMCQ(m.mcq));
+  el.appendChild(renderMCQ(m.mcq, m.id));
   return el;
 }
 
