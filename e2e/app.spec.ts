@@ -159,3 +159,19 @@ for (const [id, lecture, topic, note, label] of [
     await expect(page.locator(`#${id}-${note} .pages`)).toContainText(label);
   });
 }
+
+test("concept check shuffles options and still marks the right answer", async ({ page }) => {
+  await page.goto("/m3/quiz");
+  const items = page.locator(".mcq > li");
+  const order = async () => (await items.locator(".opt").allTextContents()).join("|");
+  const before = await order();
+  // Answer every question with its first option: each must reveal exactly one right answer and an explanation.
+  for (const li of await items.all()) {
+    await li.locator(".opt").first().click();
+    await expect(li.locator(".opt.right")).toHaveCount(1);
+    await expect(li.locator(".why")).toBeVisible();
+  }
+  await expect(page.locator("[data-score]")).toContainText(`/${await items.count()} right`);
+  await page.click("[data-reset]");
+  expect(await order()).not.toBe(before);
+});
