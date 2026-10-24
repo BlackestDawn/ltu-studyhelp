@@ -6,6 +6,7 @@ import { cwndTrace } from "./lib/cwnd.js";
 import { dijkstra, dijkstraTable, INF, showCost, nextHop } from "./lib/routing.js";
 import { switchFrame, slottedAloha, pureAloha } from "./lib/lan.js";
 import { CODES, encode, channel, decode } from "./lib/wireless.js";
+import { rsaKeys, validE, modPow, ACL, filterPacket } from "./lib/crypto.js";
 
 export function widgetPipeline(){
   const el=document.createElement("article");el.className="card";
@@ -352,6 +353,70 @@ export function widgetMobility(){
     keep.set({mode,step});};
   el.addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const k=+b.dataset.s;step=k===0?0:step+k;draw();});
   $("#mb-mode",el).addEventListener("change",e=>{mode=e.target.value;step=0;draw();});
+  draw();return el;
+}
+
+/* ---------- module 8: security models ---------- */
+const PRIMES=[3,5,7,11,13,17,19,23];
+export function widgetRSA(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("rsa"),st=keep.get();
+  let p=PRIMES.includes(st.p)?st.p:5,q=PRIMES.includes(st.q)?st.q:7,e=st.e||5,m=Number.isInteger(st.m)?st.m:12;
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · public-key cryptography</span><h3>Toy RSA</h3><p class="pages"><b>Builds on</b> pp. 618–624 RSA and session keys (§8.2.2)</p></div>
+  <p class="q">Pick two primes and a public exponent e. Real RSA uses primes hundreds of digits long; these tiny ones only show the arithmetic. The book's example is p = 5, q = 7, e = 5.</p>
+  <div class="controls"><label for="rs-p">p <select id="rs-p">${PRIMES.map(x=>`<option>${x}</option>`).join("")}</select></label><label for="rs-q">q <select id="rs-q">${PRIMES.map(x=>`<option>${x}</option>`).join("")}</select></label><label for="rs-e">e <select id="rs-e"></select></label><label for="rs-m">message m <input type="number" id="rs-m" min="0" value="12"></label></div>
+  <div class="readout" id="rs-out" aria-live="polite"></div>`;
+  const draw=()=>{
+    if(p===q){$("#rs-out",el).innerHTML="p and q must be different primes.";return;}
+    const es=validE(p,q);if(!es.includes(e))e=es[0];
+    $("#rs-e",el).innerHTML=es.map(x=>`<option${x===e?" selected":""}>${x}</option>`).join("");
+    const k=rsaKeys(p,q,e);m=Math.max(0,Math.min(k.n-1,m|0));$("#rs-m",el).value=m;$("#rs-m",el).max=k.n-1;
+    const c=modPow(m,e,k.n),back=modPow(c,k.d,k.n);
+    $("#rs-out",el).innerHTML=`<b>Keys:</b> n = p·q = ${k.n}, z = (p−1)(q−1) = ${k.z}. e = ${e} has no common factor with ${k.z}. d = ${k.d}, because e·d = ${e*k.d} and ${e*k.d} mod ${k.z} = 1.<br>
+      Public key K<sup>+</sup> = (n, e) = (${k.n}, ${e}); private key K<sup>−</sup> = (n, d) = (${k.n}, ${k.d}).<br>
+      <b>Encrypt:</b> c = m<sup>e</sup> mod n = ${m}<sup>${e}</sup> mod ${k.n} = <b>${c}</b>.<br>
+      <b>Decrypt:</b> m = c<sup>d</sup> mod n = ${c}<sup>${k.d}</sup> mod ${k.n} = <b>${back}</b> ${back===m?"✓":"✗"}.<br>
+      Swapping the keys works too: signing with d and checking with e gives ${modPow(modPow(m,k.d,k.n),e,k.n)} back. That's what digital signatures rely on.`;
+    keep.set({p,q,e,m});};
+  $("#rs-p",el).value=p;$("#rs-q",el).value=q;
+  el.addEventListener("change",ev=>{p=+$("#rs-p",el).value;q=+$("#rs-q",el).value;if(ev.target.id==="rs-e")e=+$("#rs-e",el).value;m=+$("#rs-m",el).value;draw();});
+  el.addEventListener("input",ev=>{if(ev.target.id==="rs-m"){m=+ev.target.value;draw();}});
+  draw();return el;
+}
+
+const FW_PRESETS={
+  web:["Outgoing web request",{src:"inside",dst:"outside",proto:"TCP",sport:51515,dport:80,ack:false}],
+  reply:["Web server's reply",{src:"outside",dst:"inside",proto:"TCP",sport:80,dport:51515,ack:true}],
+  syn:["Outsider opening a connection to an inside web server",{src:"outside",dst:"inside",proto:"TCP",sport:40001,dport:80,ack:false}],
+  dns:["Outgoing DNS query",{src:"inside",dst:"outside",proto:"UDP",sport:3333,dport:53,ack:false}],
+  fake:["Attacker's fake “reply” (source port 80, ACK set)",{src:"outside",dst:"inside",proto:"TCP",sport:80,dport:12345,ack:true}],
+  ping:["Ping from outside",{src:"outside",dst:"inside",proto:"ICMP",sport:0,dport:0,ack:false}],
+};
+export function widgetFirewall(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("firewall"),st=keep.get();
+  let pkt=st.pkt&&typeof st.pkt==="object"?st.pkt:{...FW_PRESETS.web[1]};
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · stateless packet filter</span><h3>Test a firewall's access control list</h3><p class="pages"><b>Builds on</b> pp. 667–672 traditional and stateful packet filters (§8.9.1)</p></div>
+  <p class="q">The book's ACL for organisation 222.22/16 on its Internet-facing router interface. Rules are checked top to bottom; the first match decides. Try the presets, especially the attacker's fake reply.</p>
+  <div class="controls"><label for="fw-pre">Preset <select id="fw-pre"><option value="">Choose…</option>${Object.entries(FW_PRESETS).map(([k,[n]])=>`<option value="${k}">${n}</option>`).join("")}</select></label></div>
+  <div class="controls"><label for="fw-dir">Direction <select id="fw-dir"><option value="out">inside → outside</option><option value="in">outside → inside</option></select></label><label for="fw-proto">Protocol <select id="fw-proto"><option>TCP</option><option>UDP</option><option>ICMP</option></select></label><label for="fw-sp">Source port <input type="number" id="fw-sp" min="0" max="65535"></label><label for="fw-dp">Dest port <input type="number" id="fw-dp" min="0" max="65535"></label><label><input type="checkbox" id="fw-ack"> ACK bit</label></div>
+  <div id="fw-tbl"></div><div class="readout" id="fw-out" aria-live="polite"></div>`;
+  const show=r=>r.sport==="all"?"all":r.sport;
+  const draw=()=>{
+    $("#fw-dir",el).value=pkt.src==="inside"?"out":"in";$("#fw-proto",el).value=pkt.proto;$("#fw-sp",el).value=pkt.sport;$("#fw-dp",el).value=pkt.dport;$("#fw-ack",el).checked=!!pkt.ack;
+    const icmp=pkt.proto==="ICMP";["#fw-sp","#fw-dp","#fw-ack"].forEach(s=>$(s,el).disabled=icmp);
+    const r=filterPacket(pkt),place=x=>x==="inside"?"222.22/16":x==="outside"?"outside of 222.22/16":x;
+    $("#fw-tbl",el).innerHTML=`<div class="tblwrap"><table><thead><tr><th>#</th><th>Action</th><th>Source</th><th>Dest</th><th>Protocol</th><th>Src port</th><th>Dest port</th><th>Flag</th></tr></thead><tbody>${ACL.map((a,i)=>`<tr${i+1===r.rule?' class="hl"':""}><td>${i+1}</td><td>${a.action}</td><td>${place(a.src)}</td><td>${place(a.dst)}</td><td>${a.proto}</td><td>${show(a)}</td><td>${a.dport}</td><td>${a.flag}</td></tr>`).join("")}</tbody></table></div>`;
+    let msg=`<b>${r.action==="allow"?"Allowed":"Denied"}</b> by rule ${r.rule}.`;
+    if(r.rule===5)msg+=" No earlier rule matched, so the final deny-all rule applies.";
+    if(r.rule===2)msg+=" A stateless filter can't tell whether this really belongs to a connection someone inside opened: an attacker can craft packets with source port 80 and the ACK bit set to slip through. A <b>stateful</b> filter checks its connection table and drops packets that match no open connection.";
+    if(pkt.src==="outside"&&pkt.proto==="TCP"&&pkt.dport===80&&!pkt.ack)msg+=" Incoming connection attempts (ACK bit 0) are blocked, so outsiders can't open connections to inside servers.";
+    $("#fw-out",el).innerHTML=msg;keep.set({pkt});};
+  el.addEventListener("change",ev=>{
+    if(ev.target.id==="fw-pre"){const pr=FW_PRESETS[ev.target.value];if(pr)pkt={...pr[1]};draw();return;}
+    const out=$("#fw-dir",el).value==="out";
+    pkt={src:out?"inside":"outside",dst:out?"outside":"inside",proto:$("#fw-proto",el).value,sport:+$("#fw-sp",el).value||0,dport:+$("#fw-dp",el).value||0,ack:$("#fw-ack",el).checked};
+    $("#fw-pre",el).value="";draw();});
   draw();return el;
 }
 

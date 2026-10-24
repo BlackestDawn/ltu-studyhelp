@@ -100,9 +100,9 @@ td.hl{background:var(--accent-soft);font-weight:700}
 
 /* widgets */
 .controls{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:10px 0}
-.controls label{font-size:.88rem;display:flex;gap:6px;align-items:center}
+.controls label{font-size:.88rem;display:flex;gap:6px;align-items:center;max-width:100%;min-width:0}
 .controls input[type=number]{width:70px;font-family:var(--f-mono);padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
-.controls select{font:inherit;font-size:.88rem;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.controls select{font:inherit;font-size:.88rem;padding:5px 7px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink);max-width:100%;min-width:0}
 .controls input[type=range]{accent-color:var(--accent)}
 .svgbox{overflow-x:auto}
 .svgbox svg{display:block;width:100%;min-width:520px;height:auto}

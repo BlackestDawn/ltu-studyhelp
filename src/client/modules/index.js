@@ -7,8 +7,9 @@ import m4 from "./m4/index.js";
 import m5 from "./m5/index.js";
 import m6 from "./m6/index.js";
 import m7 from "./m7/index.js";
+import m8 from "./m8/index.js";
 
-export const MODULES = [m1, m2, m3, m4, m5, m6, m7];
+export const MODULES = [m1, m2, m3, m4, m5, m6, m7, m8];
 
 // Base URL for the book authors' interactive problems.
 export const GA = "https://gaia.cs.umass.edu/kurose_ross/interactive/";

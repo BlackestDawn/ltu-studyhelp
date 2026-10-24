@@ -1,6 +1,6 @@
 # Networks Midterm Workbench
 
-Study app for *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–7. Each module has a summary, study notes with interactive models, labs that generate fresh numbers and show worked solutions, a concept check, and links to further resources.
+Study app for *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–8. Each module has a summary, study notes with interactive models, labs that generate fresh numbers and show worked solutions, a concept check, and links to further resources.
 
 Everything runs in the browser. Progress, ticked objectives, lab answers, concept-check picks, model settings and the reading position on each page are saved in `localStorage`, so they stay on the viewer's own device and survive reloads and app updates.
 
@@ -56,7 +56,7 @@ src/
     views/             home page, module page, and its five sections
     modules/
       index.js         ordered list of modules
-      m1/ … m7/        one folder per module
+      m1/ … m8/        one folder per module
         index.js       title, objectives, reading, links
         practice.js    labs (drills) and concept-check questions
         study.js       summary, study notes and key terms

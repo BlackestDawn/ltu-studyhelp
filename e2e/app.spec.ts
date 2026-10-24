@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const MODULES = ["m1", "m2", "m3", "m4", "m5", "m6", "m7"];
+const MODULES = ["m1", "m2", "m3", "m4", "m5", "m6", "m7", "m8"];
 const SECTIONS = ["summary", "notes", "labs", "quiz", "resources"];
 
 // Fail any test that triggers a page error or a console error from our own code.
@@ -118,7 +118,7 @@ test("study notes: contents links, models and glossary filter", async ({ page })
 
 test("no horizontal scrolling at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs", "/m7/notes", "/m7/labs"]) {
+  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs", "/m7/notes", "/m7/labs", "/m8/notes", "/m8/labs"]) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
@@ -153,6 +153,8 @@ for (const [id, lecture, topic, note, label] of [
   ["m5", 2, "ICMP: the Internet Control Message Protocol", "icmp", "Lecture 12"],
   ["m6", 0, "Link-layer switches", "switch", "Lecture 13"],
   ["m7", 0, "CDMA", "cdma", "Lecture 14"],
+  ["m8", 0, "Public-key cryptography and RSA", "pubkey", "Lecture 15"],
+  ["m8", 1, "Securing TCP connections: TLS", "tls", "Lecture 16"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
@@ -331,5 +333,25 @@ test.describe("module 7 wireless and mobility models", () => {
     await page.selectOption("#mb-mode", "direct");
     await model.locator('[data-s="1"]').click();
     await expect(page.locator("#mb-out")).toContainText("where the mobile is now");
+  });
+});
+
+test.describe("module 8 security models", () => {
+  test("RSA: the book's example keys encrypt and decrypt", async ({ page }) => {
+    await page.goto("/m8/notes");
+    await expect(page.locator("#rs-out")).toContainText("d = 29");
+    await expect(page.locator("#rs-out")).toContainText("= 17");
+    await page.selectOption("#rs-q", "11");
+    await expect(page.locator("#rs-out")).toContainText("n = p·q = 55");
+    await expect(page.locator("#rs-out")).toContainText("✓");
+  });
+
+  test("firewall: a crafted ACK passes the stateless ACL; an outside SYN doesn't", async ({ page }) => {
+    await page.goto("/m8/notes");
+    await page.selectOption("#fw-pre", "fake");
+    await expect(page.locator("#fw-out")).toContainText("Allowed by rule 2");
+    await expect(page.locator("#fw-out")).toContainText("stateful");
+    await page.selectOption("#fw-pre", "syn");
+    await expect(page.locator("#fw-out")).toContainText("Denied by rule 5");
   });
 });

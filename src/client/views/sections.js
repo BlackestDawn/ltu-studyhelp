@@ -99,7 +99,7 @@ function resources(m) {
       <ul class="objs" style="margin-top:6px">${m.read.map(([t, pg], i) => checkbox(`r${m.id}${i}`, `${t} <span class="mono" style="color:var(--muted)">pp. ${pg}</span>`)).join("")}</ul>
       <p class="sub" style="margin-top:12px">Then try these end-of-chapter problems:</p><div>${m.probs.map(x => `<span class="pill">${x}</span>`).join(" ")}</div></div>
     <div class="card"><h3>Authors' interactive problems</h3><p class="sub" style="margin-top:4px">Randomised problems from the book's authors, with answers.</p>
-      <ul>${m.inter.map(([n, u]) => `<li><a href="${GA}${u}" target="_blank" rel="noopener">${n}</a></li>`).join("")}</ul>
+      ${m.inter.length ? `<ul>${m.inter.map(([n, u]) => `<li><a href="${GA}${u}" target="_blank" rel="noopener">${n}</a></li>`).join("")}</ul>` : `<p class="sub" style="margin-top:6px">The authors have no interactive problems for this chapter; the AI tutor below covers it.</p>`}
       <p style="font-size:.9rem;margin-top:8px"><a href="https://gaia.cs.umass.edu/kurose_ross/wireshark.php" target="_blank" rel="noopener">${m.lab}</a> · <a href="https://gaia.cs.umass.edu/kurose_ross/knowledgechecks/" target="_blank" rel="noopener">Knowledge checks</a> · <a href="https://gaia.cs.umass.edu/kurose_ross/tutor.php?bot=${m.tutor}" target="_blank" rel="noopener">Chapter ${m.tutor} AI tutor</a></p></div>
   </div>`;
   bindChecklists(el);
