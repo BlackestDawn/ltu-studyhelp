@@ -237,3 +237,6 @@ header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
 .study-qs li{margin:4px 0}
 .concepts{margin-top:14px;line-height:2}
 .concepts .objhead{display:inline;margin-right:6px}
+.swbox{fill:var(--sunk);stroke:var(--line);stroke-width:1.6}
+.swlbl{fill:var(--muted);font-size:13px}
+.gedge.hotlink{stroke:var(--signal);stroke-width:4}

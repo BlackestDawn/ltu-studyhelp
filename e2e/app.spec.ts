@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const MODULES = ["m1", "m2", "m3", "m4", "m5"];
+const MODULES = ["m1", "m2", "m3", "m4", "m5", "m6"];
 const SECTIONS = ["summary", "notes", "labs", "quiz", "resources"];
 
 // Fail any test that triggers a page error or a console error from our own code.
@@ -118,7 +118,7 @@ test("study notes: contents links, models and glossary filter", async ({ page })
 
 test("no horizontal scrolling at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs"]) {
+  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs"]) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
@@ -151,10 +151,11 @@ for (const [id, lecture, topic, note, label] of [
   ["m4", 1, "Generalised forwarding and SDN", "generalized", "Lecture 9"],
   ["m5", 0, "Link-state routing and Dijkstra's algorithm", "ls", "Lecture 10"],
   ["m5", 2, "ICMP: the Internet Control Message Protocol", "icmp", "Lecture 12"],
+  ["m6", 0, "Link-layer switches", "switch", "Lecture 13"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
-    await expect(page.locator(".lecture")).toHaveCount(["m3", "m5"].includes(id) ? 3 : 2);
+    await expect(page.locator(".lecture")).toHaveCount(({ m3: 3, m5: 3, m6: 1 } as Record<string, number>)[id] ?? 2);
     await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
     await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
     await expect(page.locator(`#${id}-${note}`)).toBeInViewport();
@@ -281,5 +282,33 @@ test.describe("module 5 routing models", () => {
     await model.locator('[data-s="end"]').click();
     await expect(model.locator("svg")).toContainText("Dy(x) = 51 via z");
     await expect(model.locator("svg")).toContainText("Dz(x) = 50 via x");
+  });
+});
+
+test.describe("module 6 link-layer models", () => {
+  test("learning switch: flood, learn, forward, filter", async ({ page }) => {
+    await page.goto("/m6/notes");
+    const send = async (from: string, to: string) => {
+      await page.selectOption("#sw-src", from);
+      await page.selectOption("#sw-dst", to);
+      await page.click('#m6-switch [data-a="send"]');
+    };
+    await send("A", "D");
+    await expect(page.locator("#sw-out")).toContainText("floods");
+    await send("D", "A");
+    await expect(page.locator("#sw-out")).toContainText("forwards");
+    await send("E", "D");
+    await expect(page.locator("#sw-out")).toContainText("filters");
+    await expect(page.locator("#sw-tbl tbody tr")).toHaveCount(3);
+    await page.reload();
+    await expect(page.locator("#sw-tbl tbody tr")).toHaveCount(3);
+    await page.click('#m6-switch [data-a="reset"]');
+    await expect(page.locator("#sw-tbl")).toContainText("empty");
+  });
+
+  test("ALOHA model reports the optimum p = 1/N", async ({ page }) => {
+    await page.goto("/m6/notes");
+    await page.locator("#al-n").fill("20");
+    await expect(page.locator("#al-out")).toContainText("p = 1/N = 0.050");
   });
 });

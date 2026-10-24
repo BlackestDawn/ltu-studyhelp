@@ -4,6 +4,7 @@ import { $, store } from "./lib/util.js";
 const kept=k=>({get:()=>store.get("w:"+k)||{},set:v=>store.set("w:"+k,v)});
 import { cwndTrace } from "./lib/cwnd.js";
 import { dijkstra, dijkstraTable, INF, showCost, nextHop } from "./lib/routing.js";
+import { switchFrame, slottedAloha, pureAloha } from "./lib/lan.js";
 
 export function widgetPipeline(){
   const el=document.createElement("article");el.className="card";
@@ -212,4 +213,80 @@ export function widgetDV(){
   draw();return el;
 }
 const tblRows=(head,rows)=>`<div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+
+/* ---------- module 6: link-layer models ---------- */
+export function widgetAloha(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("aloha"),st=keep.get();
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · random access</span><h3>How efficient is ALOHA?</h3><p class="pages"><b>Builds on</b> pp. 465–469 slotted and pure ALOHA (§6.3.2)</p></div>
+  <p class="q">N nodes always have a frame to send, and each transmits with probability p. Efficiency is the long-run fraction of time carrying exactly one frame. Move the sliders to see why too small a p wastes the channel with silence and too large a p wastes it with collisions.</p>
+  <div class="controls"><label for="al-n">Nodes N <input type="range" id="al-n" min="2" max="50" value="10"> <span class="mono" id="al-nv"></span></label><label for="al-p">Probability p <input type="range" id="al-p" min="1" max="100" value="10"> <span class="mono" id="al-pv"></span></label></div>
+  <div class="svgbox"><svg id="al-svg" viewBox="0 0 640 260" role="img" aria-label="ALOHA efficiency against transmission probability"></svg></div>
+  <div class="readout" id="al-out" aria-live="polite"></div>`;
+  if(st.n)$("#al-n",el).value=st.n;if(st.p)$("#al-p",el).value=st.p;
+  const draw=()=>{const N=+$("#al-n",el).value,p=+$("#al-p",el).value/100;
+    $("#al-nv",el).textContent=N;$("#al-pv",el).textContent=p.toFixed(2);
+    const W=640,H=260,ml=44,mr=14,mt=16,mb=34,X=v=>ml+v*(W-ml-mr),Y=v=>mt+(H-mt-mb)*(1-v/0.5);
+    let s="";
+    for(let v=0;v<=0.5;v+=0.1)s+=`<line class="gridline" x1="${ml}" x2="${W-mr}" y1="${Y(v)}" y2="${Y(v)}"/><text x="${ml-6}" y="${Y(v)+4}" text-anchor="end" font-size="10">${v.toFixed(1)}</text>`;
+    for(let v=0;v<=1.0001;v+=0.2)s+=`<text x="${X(v)}" y="${H-mb+16}" text-anchor="middle" font-size="10">${v.toFixed(1)}</text>`;
+    s+=`<text x="${(W+ml)/2}" y="${H-4}" text-anchor="middle" font-size="10">transmission probability p</text>`;
+    const curve=f=>[...Array(201)].map((_,i)=>{const q=i/200;return `${X(q)},${Y(Math.min(0.5,f(N,q)))}`;}).join(" ");
+    s+=`<polyline class="ln" points="${curve(slottedAloha)}"/><polyline class="ssl" points="${curve(pureAloha)}"/>`;
+    s+=`<line class="ax" x1="${X(p)}" x2="${X(p)}" y1="${mt}" y2="${H-mb}"/><circle class="pt" cx="${X(p)}" cy="${Y(slottedAloha(N,p))}" r="4"/><circle class="pt" style="fill:var(--signal)" cx="${X(p)}" cy="${Y(pureAloha(N,p))}" r="4"/>`;
+    s+=`<line x1="${W-mr-190}" x2="${W-mr-170}" y1="14" y2="14" class="ln"/><text x="${W-mr-165}" y="18" font-size="10">slotted</text><line x1="${W-mr-100}" x2="${W-mr-80}" y1="14" y2="14" class="ssl"/><text x="${W-mr-75}" y="18" font-size="10">pure</text>`;
+    $("#al-svg",el).innerHTML=s;
+    const best=slottedAloha(N,1/N),bestPure=Math.max(...[...Array(1000)].map((_,i)=>pureAloha(N,(i+1)/1000)));
+    $("#al-out",el).innerHTML=`At p = ${p.toFixed(2)}: slotted <b>${slottedAloha(N,p).toFixed(3)}</b>, pure <b>${pureAloha(N,p).toFixed(3)}</b>. Slotted ALOHA is best at p = 1/N = ${(1/N).toFixed(3)}, giving ${best.toFixed(3)}; pure peaks at ${bestPure.toFixed(3)}. As N grows these approach 1/e ≈ 0.368 and 1/(2e) ≈ 0.184.`;
+    keep.set({n:N,p:+$("#al-p",el).value});};
+  el.addEventListener("input",draw);draw();return el;
+}
+
+// A four-port self-learning switch; D and E share port 4 through a hub.
+const SW_HOSTS={A:{port:1,mac:"1A-2B-3C-4D-5E-0A",xy:[110,60]},B:{port:2,mac:"1A-2B-3C-4D-5E-0B",xy:[530,60]},C:{port:3,mac:"1A-2B-3C-4D-5E-0C",xy:[530,250]},D:{port:4,mac:"1A-2B-3C-4D-5E-0D",xy:[60,250]},E:{port:4,mac:"1A-2B-3C-4D-5E-0E",xy:[180,250]}};
+const SW_PORTS={1:[280,125],2:[360,125],3:[360,185],4:[280,185]},HUB=[120,210];
+export function widgetSwitch(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("switch"),st=keep.get();
+  let table=st.table&&typeof st.table==="object"?st.table:{},log=Array.isArray(st.log)?st.log:[],last=st.last||null;
+  const names=Object.keys(SW_HOSTS);
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · link-layer switch</span><h3>Watch a switch learn</h3><p class="pages"><b>Builds on</b> pp. 491–495 forwarding, filtering and self-learning (§6.4.3)</p></div>
+  <p class="q">The switch table starts empty. For every frame, the switch first records the <b>source</b> MAC address and the port it arrived on, then looks up the <b>destination</b>: unknown → <b>flood</b>, on the arrival port → <b>filter</b>, otherwise → <b>forward</b>. D and E share port 4 through a hub, so the hub delivers frames between them without help.</p>
+  <div class="controls"><label for="sw-src">From <select id="sw-src">${names.map(n=>`<option>${n}</option>`).join("")}</select></label><label for="sw-dst">To <select id="sw-dst">${names.map(n=>`<option>${n}</option>`).join("")}<option value="*">Broadcast (FF-FF-FF-FF-FF-FF)</option></select></label><button class="btn primary" data-a="send">Send frame</button><button class="btn ghost" data-a="reset">Clear switch table</button></div>
+  <div class="svgbox"><svg id="sw-svg" viewBox="0 0 640 300" role="img" aria-label="Switch, hub and hosts"></svg></div>
+  <div class="readout" id="sw-out" aria-live="polite"></div><div id="sw-tbl"></div>`;
+  $("#sw-dst",el).value="B";
+  const draw=()=>{
+    const inP=last?SW_HOSTS[last.src].port:null,out=last?last.out:[];
+    let g="";
+    names.forEach(n=>{const h=SW_HOSTS[n],[px,py]=h.port===4?HUB:SW_PORTS[h.port],[x,y]=h.xy;
+      const hot=last&&(n===last.src?" in":(out.includes(h.port)||(h.port===inP&&inP===4&&n!==last.src))?" on":"");
+      g+=`<line class="gedge${hot===" on"?" tree":""}${hot===" in"?" hotlink":""}" x1="${px}" y1="${py}" x2="${x}" y2="${y}"/>`;});
+    const hubOut=last&&(out.includes(4)||inP===4);
+    g+=`<line class="gedge${hubOut?(inP===4?" hotlink":" tree"):""}" x1="${HUB[0]}" y1="${HUB[1]}" x2="${SW_PORTS[4][0]}" y2="${SW_PORTS[4][1]}"/>`;
+    g+=`<rect x="250" y="105" width="140" height="100" rx="10" class="swbox"/><text x="320" y="160" text-anchor="middle" class="swlbl">switch</text>`;
+    Object.entries(SW_PORTS).forEach(([p,[x,y]])=>{g+=`<g class="gnode${out.includes(+p)?" done":""}${+p===inP?" cur":""}"><circle cx="${x}" cy="${y}" r="13"/><text x="${x}" y="${y+5}" text-anchor="middle">${p}</text></g>`;});
+    g+=`<rect x="${HUB[0]-28}" y="${HUB[1]-14}" width="56" height="28" rx="6" class="swbox"/><text x="${HUB[0]}" y="${HUB[1]+5}" text-anchor="middle" class="swlbl">hub</text>`;
+    names.forEach(n=>{const [x,y]=SW_HOSTS[n].xy;g+=`<g class="gnode${last&&n===last.src?" cur":""}"><circle cx="${x}" cy="${y}" r="20"/><text x="${x}" y="${y+5}" text-anchor="middle">${n}</text></g>`;});
+    $("#sw-svg",el).innerHTML=g;
+    let msg="Pick a source and destination and send a frame.";
+    if(last){const s=last.src,d=last.dst==="*"?"the broadcast address":last.dst;
+      msg=`<b>Frame ${log.length}:</b> ${s} → ${d}. The switch learns <b>${s} is on port ${inP}</b>. `+
+      (last.action==="flood"?(last.dst==="*"?"Broadcast frames always go out of every port except the one they came in on":`${d} isn't in the table yet, so it <b>floods</b> the frame out of every port except ${inP}`)+` (ports ${last.out.join(", ")}).`:
+       last.action==="filter"?`The table says ${d} is on port ${inP}, the same port the frame came in on, so the switch <b>filters</b> (discards) it. The hub has already delivered it.`:
+       `The table says ${d} is on port ${last.out[0]}, so the switch <b>forwards</b> the frame only there.`);}
+    $("#sw-out",el).innerHTML=msg;
+    const rows=Object.entries(table).sort((a,b)=>a[1].t-b[1].t).map(([n,e])=>[`${n} · ${SW_HOSTS[n].mac}`,e.port,`frame ${e.t}`]);
+    $("#sw-tbl",el).innerHTML=rows.length?tblRows(["MAC address","Port","Learned at"],rows):"<p class='sub'>Switch table: empty.</p>";
+    keep.set({table,log,last});};
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-a]");if(!b)return;
+    if(b.dataset.a==="reset"){table={};log=[];last=null;draw();return;}
+    const src=$("#sw-src",el).value,dst=$("#sw-dst",el).value;
+    if(src===dst){$("#sw-out",el).textContent="Pick a different destination than the source.";return;}
+    const ports=Object.fromEntries(Object.entries(table).map(([n,v])=>[n,v.port]));
+    const r=switchFrame(ports,SW_HOSTS[src].port,src,dst,[1,2,3,4]);
+    log.push({src,dst});table[src]={port:SW_HOSTS[src].port,t:log.length};
+    last={src,dst,action:r.action,out:r.out};draw();});
+  draw();return el;
+}
 
