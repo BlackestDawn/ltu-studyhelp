@@ -60,3 +60,15 @@ describe("judge numeric fields", () => {
     expect(judge({ type: "num", ans: 5003, abs: 0 }, "5 003")).toBe(true);
   });
 });
+
+describe("judge node-name answers", () => {
+  const f = { type: "letters", ans: "uxyvwz" };
+  test("ignores spaces, commas and case", () => {
+    expect(judge(f, "u x y v w z")).toBe(true);
+    expect(judge(f, "U,X,Y,V,W,Z")).toBe(true);
+    expect(judge(f, "uxyvwz")).toBe(true);
+  });
+  test("order matters", () => {
+    expect(judge(f, "u x v y w z")).toBe(false);
+  });
+});

@@ -222,3 +222,18 @@ header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
 .lecture ul{margin:8px 0;padding-left:20px}
 .lecture p{font-size:.93rem}
 .lecture .callout{margin:10px 0 0}
+/* routing graph models */
+.gedge{stroke:var(--line);stroke-width:1.8}
+.gedge.tree{stroke:var(--accent);stroke-width:4}
+.gcost{font-size:13px;fill:var(--ink)}
+.gcost.hot{fill:var(--signal);font-weight:600}
+.gnode circle{fill:var(--surface);stroke:var(--line);stroke-width:1.6}
+.gnode text{fill:var(--ink);font-size:14px}
+.gnode text.gd{fill:var(--muted);font-size:11px}
+.gnode.done circle{fill:var(--accent-soft);stroke:var(--accent)}
+.gnode.cur circle{stroke:var(--signal);stroke-width:3}
+.study-qs{margin-top:16px}
+.study-qs ol{margin:6px 0 0;padding-left:22px}
+.study-qs li{margin:4px 0}
+.concepts{margin-top:14px;line-height:2}
+.concepts .objhead{display:inline;margin-right:6px}

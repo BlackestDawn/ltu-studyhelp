@@ -20,10 +20,12 @@ export function judge(f,raw){
   if(f.type==="num"){const vs=readNumber(raw);if(!vs.length)return false;const tol=Math.max(f.abs??1e-9,Math.abs(f.ans)*(f.rel??0.01));return vs.some(v=>Math.abs(v-f.ans)<=tol);}
   if(f.type==="bin")return raw.replace(/[^01]/g,"")===f.ans;
   if(f.type==="seq")return raw.replace(/[^0-9]/g,"")===String(f.ans).replace(/[^0-9]/g,"");
+  // Node names such as "u x y v" or "u,x,y,v": letters only, any case.
+  if(f.type==="letters")return raw.toLowerCase().replace(/[^a-z]/g,"")===String(f.ans).toLowerCase();
   if(f.type==="select")return [].concat(f.ans).includes(raw);
   const norm=s=>s.toLowerCase().replace(/\s+/g,"");return [].concat(f.ans).map(norm).includes(norm(raw));
 }
-export const showAns=f=>f.show??(f.type==="num"?fmt(f.ans):f.type==="bin"?f.ans.replace(/(.{4})(?=.)/g,"$1 "):[].concat(f.ans)[0]);
+export const showAns=f=>f.show??(f.type==="num"?fmt(f.ans):f.type==="bin"?f.ans.replace(/(.{4})(?=.)/g,"$1 "):f.type==="letters"?f.ans.split("").join(" "):[].concat(f.ans)[0]);
 // Each lab saves its generated problem, typed answers and open/checked state in
 // this browser, so a reload or app update brings the visitor back to the same
 // problem. The fingerprint drops saved state when the lab's text changes; bump

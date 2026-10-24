@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const MODULES = ["m1", "m2", "m3", "m4"];
+const MODULES = ["m1", "m2", "m3", "m4", "m5"];
 const SECTIONS = ["summary", "notes", "labs", "quiz", "resources"];
 
 // Fail any test that triggers a page error or a console error from our own code.
@@ -118,7 +118,7 @@ test("study notes: contents links, models and glossary filter", async ({ page })
 
 test("no horizontal scrolling at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs"]) {
+  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs"]) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
@@ -149,14 +149,16 @@ for (const [id, lecture, topic, note, label] of [
   ["m3", 1, "TCP: flow control and connection management", "tcp-conn", "Lecture 6"],
   ["m3", 2, "Multiplexing and demultiplexing", "mux", "Lecture 7"],
   ["m4", 1, "Generalised forwarding and SDN", "generalized", "Lecture 9"],
+  ["m5", 0, "Link-state routing and Dijkstra's algorithm", "ls", "Lecture 10"],
+  ["m5", 2, "ICMP: the Internet Control Message Protocol", "icmp", "Lecture 12"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
-    await expect(page.locator(".lecture")).toHaveCount(id === "m3" ? 3 : 2);
+    await expect(page.locator(".lecture")).toHaveCount(["m3", "m5"].includes(id) ? 3 : 2);
     await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
     await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
     await expect(page.locator(`#${id}-${note}`)).toBeInViewport();
-    await expect(page.locator(`#${id}-${note} .pages`)).toContainText(label);
+    await expect(page.locator(`#${id}-${note} > .pages`)).toContainText(label);
   });
 }
 
@@ -250,5 +252,34 @@ test.describe("state survives a reload", () => {
     await page.goto("/m2/notes");
     await expect(page.locator("#dns-mode")).toHaveValue("rc");
     await expect(page.locator("#dns-out")).toContainText("Message 2 of 8");
+  });
+});
+
+test.describe("module 5 routing models", () => {
+  test("Dijkstra model reproduces the book's Figure 5.4 forwarding table", async ({ page }) => {
+    await page.goto("/m5/notes");
+    const model = page.locator("#m5-ls");
+    for (let i = 0; i < 5; i++) await model.locator('[data-k="1"]').click();
+    await expect(page.locator("#dj-out")).toContainText("v → (u, v), w → (u, x), x → (u, x), y → (u, x), z → (u, x)");
+    await expect(model.locator("table tbody tr")).toHaveCount(6);
+    await expect(model.locator("table tbody tr").nth(2)).toContainText("uxy"); // the book takes y before v
+    await model.locator('[data-k="new"]').click();
+    await expect(page.locator("#dj-out")).toContainText("Initialisation");
+  });
+
+  test("distance-vector model: count-to-infinity, then poisoned reverse", async ({ page }) => {
+    await page.goto("/m5/notes");
+    const model = page.locator("#m5-dv");
+    await model.locator('[data-s="1"]').click();
+    await expect(page.locator("#dv-out")).toContainText("Routing loop");
+    await expect(page.locator("#dv-out")).toContainText("= 6 via z");
+    await model.locator('[data-s="end"]').click();
+    await expect(page.locator("#dv-out")).toContainText("Finished after");
+    await page.check("#dv-pr");
+    await model.locator('[data-s="1"]').click();
+    await expect(page.locator("#dv-out")).toContainText("= 60 via x");
+    await model.locator('[data-s="end"]').click();
+    await expect(model.locator("svg")).toContainText("Dy(x) = 51 via z");
+    await expect(model.locator("svg")).toContainText("Dz(x) = 50 via x");
   });
 });

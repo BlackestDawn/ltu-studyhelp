@@ -3,6 +3,7 @@ import { $, store } from "./lib/util.js";
 // Each model remembers its settings in this browser between visits.
 const kept=k=>({get:()=>store.get("w:"+k)||{},set:v=>store.set("w:"+k,v)});
 import { cwndTrace } from "./lib/cwnd.js";
+import { dijkstra, dijkstraTable, INF, showCost, nextHop } from "./lib/routing.js";
 
 export function widgetPipeline(){
   const el=document.createElement("article");el.className="card";
@@ -96,3 +97,119 @@ export function widgetIPv4(){
   const sel=kept("ipv4").get().i;if(Number.isInteger(sel))el.querySelector(`.ipf[data-i="${sel}"]`)?.click();
   return el;
 }
+
+/* ---------- module 5: routing models ---------- */
+// The book's Figure 5.3 network, with fixed node positions.
+const NET=[["u","v",2],["u","x",1],["u","w",5],["v","x",2],["v","w",3],["x","w",3],["x","y",1],["w","y",1],["w","z",5],["y","z",2]];
+const POS={u:[70,150],v:[230,55],w:[410,55],x:[230,245],y:[410,245],z:[570,150]};
+
+export function widgetDijkstra(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("dijkstra"),st=keep.get(),bookCosts=NET.map(e=>e[2]);
+  let costs=Array.isArray(st.costs)&&st.costs.length===NET.length?st.costs:bookCosts;
+  let step=Number.isInteger(st.step)?st.step:0;
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · link-state routing</span><h3>Step through Dijkstra's algorithm</h3><p class="pages"><b>Builds on</b> pp. 383–388 the link-state routing algorithm (§5.2.1)</p></div>
+  <p class="q">Source <b>u</b>. Each step adds the node not yet in N′ with the lowest D, then checks whether going through it is cheaper for each of its neighbours. Under each node: D, and the previous node p. Thick links form the least-cost tree found so far.</p>
+  <div class="controls"><button class="btn" data-k="-1">← Back</button><button class="btn primary" data-k="1">Next step →</button><button class="btn ghost" data-k="0">Restart</button><button class="btn ghost" data-k="new">New link costs</button><button class="btn ghost" data-k="book">Book example</button></div>
+  <div class="svgbox"><svg id="dj-svg" viewBox="0 0 640 300" role="img" aria-label="Network graph with link costs"></svg></div>
+  <div class="readout" id="dj-out" aria-live="polite"></div><div id="dj-tbl"></div>`;
+  const isBook=()=>costs.every((c,i)=>c===bookCosts[i]);
+  const run=()=>dijkstra(NET.map((e,i)=>[e[0],e[1],costs[i]]),"u",isBook()?["y"]:[]);
+  const draw=()=>{
+    const r=run(),last=r.steps.length-1;step=Math.max(0,Math.min(last,step));
+    const s=r.steps[step],prev=r.steps[step-1];
+    let svg="";
+    NET.forEach(([a,b],i)=>{const [x1,y1]=POS[a],[x2,y2]=POS[b],t=a==="u"&&b==="w"?.62:.5; // u–w's midpoint sits beside v–x
+      const tree=(s.N.includes(b)&&b!=="u"&&s.P[b]===a)||(s.N.includes(a)&&a!=="u"&&s.P[a]===b);
+      svg+=`<line class="gedge${tree?" tree":""}" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="gcost" x="${x1+(x2-x1)*t+6}" y="${y1+(y2-y1)*t-6}">${costs[i]}</text>`;});
+    Object.entries(POS).forEach(([n,[x,y]])=>{
+      const cls=step>0&&n===s.added?" cur":s.N.includes(n)?" done":"";
+      const lbl=n==="u"?"source":`${showCost(s.D[n])}${s.P[n]?`, ${s.P[n]}`:""}`;
+      svg+=`<g class="gnode${cls}"><circle cx="${x}" cy="${y}" r="20"/><text x="${x}" y="${y+5}" text-anchor="middle">${n}</text><text class="gd" x="${x}" y="${y<150?y-28:y+38}" text-anchor="middle">${lbl}</text></g>`;});
+    $("#dj-svg",el).innerHTML=svg;
+    let msg;
+    if(step===0)msg="<b>Initialisation:</b> N′ = {u}. D(v) = c(u,v) for u's direct neighbours; ∞ for the others.";
+    else{
+      const w=s.added,ch=Object.keys(s.D).filter(n=>!s.N.includes(n)&&s.D[n]!==prev.D[n]);
+      msg=`<b>Step ${step}:</b> add <b>${w}</b>, the cheapest node not yet in N′ (D(${w}) = ${s.D[w]}, reached via ${s.P[w]}).`;
+      if(isBook()&&step===2)msg+=" v and y tie at 2; like the book, we take y.";
+      msg+=ch.length?` Then D(v) = min(D(v), D(${w}) + c(${w},v)) improves: ${ch.map(n=>`D(${n}) ${showCost(prev.D[n])} → ${s.D[n]} via ${w}`).join("; ")}.`:` No neighbour of ${w} gets cheaper.`;
+    }
+    if(step===last)msg+=` <b>Done.</b> u's forwarding table: ${r.nodes.filter(n=>n!=="u").map(n=>`${n} → (u, ${nextHop(r.P,"u",n)})`).join(", ")}.`;
+    $("#dj-out",el).innerHTML=msg;
+    $("#dj-tbl",el).innerHTML=dijkstraTable(r,"u",step+1,step);
+    keep.set({costs,step});};
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-k]");if(!b)return;const k=b.dataset.k;
+    if(k==="new"){do{costs=NET.map(()=>1+Math.floor(Math.random()*9));}while(run().ambiguous);step=0;}
+    else if(k==="book"){costs=bookCosts;step=0;}
+    else if(k==="0")step=0;else step+=+k;
+    draw();});
+  draw();return el;
+}
+
+// Distance vector after a link-cost change, on the book's Figure 5.7 triangle:
+// x–y = 4, y–z = 1, x–z = 50. Only y's and z's costs to x are shown.
+function dvLinkChange(newXY,poison){
+  const cxz=50,cyz=1,adv=(D,next,to)=>poison&&next===to?INF:D;
+  let Dy=4,ny="x",Dz=5,nz="y",yHeard=adv(Dz,nz,"y"),zHeard=adv(Dy,ny,"z");
+  const ev=[{who:"",Dy,ny,Dz,nz,heard:null,sent:null,note:`Converged with c(x,y) = 4. ${poison?"With poisoned reverse, z (which routes via y) tells y that Dz(x) = ∞.":"z tells y that Dz(x) = 5."}`}];
+  let who="y",first=true;
+  for(let i=0;i<200;i++){
+    if(who==="y"){const viaX=newXY,viaZ=cyz+yHeard,d=Math.min(viaX,viaZ),n=viaX<=viaZ?"x":"z",changed=d!==Dy||n!==ny;
+      const heard=yHeard;Dy=d;ny=n;
+      if(!changed&&!first){ev.push({who,Dy,ny,Dz,nz,heard,sent:null});break;}
+      zHeard=adv(Dy,ny,"z");ev.push({who,Dy,ny,Dz,nz,heard,sent:zHeard,first});first=false;who="z";}
+    else{const viaX=cxz,viaY=cyz+zHeard,d=Math.min(viaX,viaY),n=viaX<=viaY?"x":"y",changed=d!==Dz||n!==nz;
+      const heard=zHeard;Dz=d;nz=n;
+      if(!changed){ev.push({who,Dy,ny,Dz,nz,heard,sent:null});break;}
+      yHeard=adv(Dz,nz,"y");ev.push({who,Dy,ny,Dz,nz,heard,sent:yHeard});who="y";}
+  }
+  return ev;
+}
+
+export function widgetDV(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("dv"),st=keep.get();
+  let news=st.news==="good"?"good":"bad",poison=!!st.poison,step=Number.isInteger(st.step)?st.step:0;
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · distance-vector routing</span><h3>Good news, bad news and poisoned reverse</h3><p class="pages"><b>Builds on</b> pp. 392–394 link-cost changes, count-to-infinity and poisoned reverse (§5.2.2)</p></div>
+  <p class="q">The book's three-router example. Only y's and z's least costs to <b>x</b> are tracked. Each step, one router recomputes with the Bellman-Ford equation using what its neighbour last told it, and sends a new distance vector if its own changed. Arrows show each router's next hop towards x.</p>
+  <div class="controls"><label for="dv-news">Link change <select id="dv-news"><option value="bad">Bad news: c(x,y) 4 → 60</option><option value="good">Good news: c(x,y) 4 → 1</option></select></label><label><input type="checkbox" id="dv-pr"> Poisoned reverse</label></div>
+  <div class="controls"><button class="btn" data-s="-1">← Back</button><button class="btn primary" data-s="1">Next update →</button><button class="btn ghost" data-s="end">Run to the end</button><button class="btn ghost" data-s="0">Restart</button></div>
+  <div class="svgbox"><svg id="dv-svg" viewBox="0 0 640 280" role="img" aria-label="Three routers and their routes to x"><defs><marker id="dvah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker></defs><g id="dv-g"></g></svg></div>
+  <div class="readout" id="dv-out" aria-live="polite"></div><div id="dv-log"></div>`;
+  $("#dv-news",el).value=news;$("#dv-pr",el).checked=poison;
+  const P={x:[90,225],y:[320,60],z:[550,225]};
+  const draw=()=>{
+    const ev=dvLinkChange(news==="bad"?60:1,poison),last=ev.length-1;step=Math.max(0,Math.min(last,step));
+    const e=ev[step],cxy=step===0?4:news==="bad"?60:1,loop=e.ny==="z"&&e.nz==="y";
+    const arrow=(from,to)=>{const [x1,y1]=P[from],[x2,y2]=P[to],dx=x2-x1,dy=y2-y1,l=Math.hypot(dx,dy),ux=dx/l,uy=dy/l,nx=-uy*12,ny=ux*12;
+      return `<line class="arw on" x1="${x1+ux*30+nx}" y1="${y1+uy*30+ny}" x2="${x2-ux*30+nx}" y2="${y2-uy*30+ny}" marker-end="url(#dvah)"/>`;};
+    let g="";
+    [["x","y",cxy],["y","z",1],["x","z",50]].forEach(([a,b,c])=>{const [x1,y1]=P[a],[x2,y2]=P[b];
+      g+=`<line class="gedge" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/><text class="gcost${a==="x"&&b==="y"&&step>0?" hot":""}" x="${(x1+x2)/2+(b==="z"&&a==="x"?0:a==="x"?-26:26)}" y="${(y1+y2)/2+(a==="x"&&b==="z"?18:-6)}" text-anchor="middle">${c}</text>`;});
+    g+=arrow("y",e.ny)+arrow("z",e.nz);
+    Object.entries(P).forEach(([n,[x,y]])=>{const lbl=n==="x"?"destination":n==="y"?`Dy(x) = ${showCost(e.Dy)} via ${e.ny}`:`Dz(x) = ${showCost(e.Dz)} via ${e.nz}`;
+      g+=`<g class="gnode${n===e.who?" cur":""}"><circle cx="${x}" cy="${y}" r="22"/><text x="${x}" y="${y+5}" text-anchor="middle">${n}</text><text class="gd" x="${x}" y="${n==="y"?y-30:y+42}" text-anchor="middle">${lbl}</text></g>`;});
+    $("#dv-g",el).innerHTML=g;
+    let msg;
+    if(step===0)msg=e.note;
+    else{const other=e.who==="y"?"z":"y",D=e.who==="y"?e.Dy:e.Dz,n=e.who==="y"?e.ny:e.nz,direct=e.who==="y"?cxy:50;
+      msg=`<b>Update ${step}:</b> ${e.first?`y sees c(x,y) change to ${cxy}. `:""}${e.who} computes D${e.who}(x) = min(c(${e.who},x) + 0, c(${e.who},${other}) + ${showCost(e.heard)}) = min(${direct}, ${e.heard===INF?"∞":1+e.heard}) = <b>${showCost(D)}</b> via ${n}. `;
+      msg+=e.sent===null?`No change, so nothing is sent: the algorithm is quiet again.`:`It tells ${other} D${e.who}(x) = ${showCost(e.sent)}${e.sent===INF?" (poisoned: it routes via "+other+")":""}.`;}
+    if(loop)msg+=` <b>Routing loop:</b> y sends packets for x to z, and z sends them back to y.`;
+    if(step===last){
+      const end=ev.findIndex((r,i)=>i>0&&r.nz!==ev[i-1].nz&&ev[i-1].ny==="z"&&ev[i-1].nz==="y");
+      msg+=` Finished after ${last} update${last>1?"s":""}.`;
+      if(end>0)msg+=` The routing loop lasted until update ${end}, when z's cost via y finally exceeded its direct link to x (50).`;}
+    $("#dv-out",el).innerHTML=msg;
+    const rows=ev.slice(1,step+1).map((r,i)=>[i+1,r.who,showCost(r.who==="y"?r.Dy:r.Dz)+" via "+(r.who==="y"?r.ny:r.nz),r.sent===null?"—":showCost(r.sent)]);
+    const shown=rows.length>8?[...rows.slice(0,3),["…","","",""],...rows.slice(-4)]:rows;
+    $("#dv-log",el).innerHTML=rows.length?tblRows(["Update","Router","New cost to x","Sends"],shown):"";
+    keep.set({news,poison,step});};
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const k=b.dataset.s;
+    if(k==="end")step=1e9;else if(k==="0")step=0;else step+=+k;draw();});
+  el.addEventListener("change",()=>{news=$("#dv-news",el).value;poison=$("#dv-pr",el).checked;step=0;draw();});
+  draw();return el;
+}
+const tblRows=(head,rows)=>`<div class="tblwrap"><table><thead><tr>${head.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</tbody></table></div>`;
+

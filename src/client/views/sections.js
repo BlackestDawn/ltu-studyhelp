@@ -1,5 +1,5 @@
 // The five views of a module: summary, study notes, labs, concept check, resources.
-import { $, esc, store } from "../lib/util.js";
+import { $, store } from "../lib/util.js";
 import { checkbox, bindChecklists } from "../lib/checklist.js";
 import { renderDrill } from "../lib/drill.js";
 import { renderMCQ } from "../lib/mcq.js";
@@ -36,14 +36,16 @@ function summary(m) {
   <section><h2>Key takeaways</h2><ol class="takeaways">${s.takeaways.map(t => `<li>${t}</li>`).join("")}</ol></section>
   <section><h2>Formula sheet</h2><p class="sub">Every formula used in this module's labs: what it means, what each symbol stands for, and when to reach for it.</p>
     <div class="tblwrap"><table class="formulas"><thead><tr><th>Formula</th><th>What it means</th><th>Use it when</th></tr></thead><tbody>
-    ${s.formulas.map(([f, what, when, vars = []]) => `<tr><td><code>${esc(f)}</code></td><td>${what}${vars.length ? `<ul class="vars" aria-label="Symbols">${vars.map(([v, d]) => `<li><code>${esc(v)}</code> ${d}</li>`).join("")}</ul>` : ""}</td><td>${when}</td></tr>`).join("")}
+    ${s.formulas.map(([f, what, when, vars = []]) => `<tr><td><code>${f}</code></td><td>${what}${vars.length ? `<ul class="vars" aria-label="Symbols">${vars.map(([v, d]) => `<li><code>${v}</code> ${d}</li>`).join("")}</ul>` : ""}</td><td>${when}</td></tr>`).join("")}
     </tbody></table></div></section>
   <section><h2>Common traps</h2><ul class="traps">${s.traps.map(t => `<li>${t}</li>`).join("")}</ul></section>
   <section><h2>Check yourself</h2>
     <div class="brief"><div class="focus"><div class="objhead">How to approach this module</div><p>${m.focus}</p>
       <p>Next: read the ${link(m, "notes", "study notes")}, then test yourself in the ${link(m, "quiz", "concept check")} or the ${link(m, "labs", "labs")}.</p></div>
     <div><div class="objhead">Learning objectives: tick when you can explain it aloud</div>
-      <ul class="objs">${m.obj.map((o, i) => checkbox(m.id + i, o)).join("")}</ul></div></div></section>`;
+      <ul class="objs">${m.obj.map((o, i) => checkbox(m.id + i, o)).join("")}</ul></div></div>
+    ${m.questions ? `<div class="card study-qs"><div class="objhead">Questions you should be able to answer</div><ol>${m.questions.map(q => `<li>${q}</li>`).join("")}</ol></div>` : ""}
+    ${m.concepts ? `<p class="concepts"><span class="objhead">Key concepts</span> ${m.concepts.map(c => `<span class="pill">${c}</span>`).join(" ")}</p>` : ""}</section>`;
   bindChecklists(el);
   return el;
 }
