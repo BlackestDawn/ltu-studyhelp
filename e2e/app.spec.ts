@@ -101,7 +101,7 @@ test("ticked objectives persist and show on the home page", async ({ page }) => 
   await page.goto("/m2");
   await page.check('[data-ck="m20"]');
   await page.goto("/");
-  await expect(page.locator(".modcard").nth(1)).toContainText("1/7 objectives ticked");
+  await expect(page.locator(".modcard").nth(1)).toContainText("1/8 objectives ticked");
 });
 
 test("study notes: contents links, models and glossary filter", async ({ page }) => {
@@ -354,4 +354,13 @@ test.describe("module 8 security models", () => {
     await page.selectOption("#fw-pre", "syn");
     await expect(page.locator("#fw-out")).toContainText("Denied by rule 5");
   });
+});
+
+test("every module's summary lists objectives, study questions and key concepts", async ({ page }) => {
+  for (const id of MODULES) {
+    await page.goto(`/${id}`);
+    expect(await page.locator(".objs li").count(), id).toBeGreaterThanOrEqual(7);
+    expect(await page.locator(".study-qs li").count(), id).toBeGreaterThanOrEqual(5);
+    expect(await page.locator(".concepts .pill").count(), id).toBeGreaterThanOrEqual(12);
+  }
 });
