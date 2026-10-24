@@ -5,6 +5,7 @@ const kept=k=>({get:()=>store.get("w:"+k)||{},set:v=>store.set("w:"+k,v)});
 import { cwndTrace } from "./lib/cwnd.js";
 import { dijkstra, dijkstraTable, INF, showCost, nextHop } from "./lib/routing.js";
 import { switchFrame, slottedAloha, pureAloha } from "./lib/lan.js";
+import { CODES, encode, channel, decode } from "./lib/wireless.js";
 
 export function widgetPipeline(){
   const el=document.createElement("article");el.className="card";
@@ -287,6 +288,70 @@ export function widgetSwitch(){
     const r=switchFrame(ports,SW_HOSTS[src].port,src,dst,[1,2,3,4]);
     log.push({src,dst});table[src]={port:SW_HOSTS[src].port,t:log.length};
     last={src,dst,action:r.action,out:r.out};draw();});
+  draw();return el;
+}
+
+/* ---------- module 7: wireless and mobility models ---------- */
+export function widgetCDMA(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("cdma"),st=keep.get();
+  let c1=Number.isInteger(st.c1)?st.c1:0,c2=Number.isInteger(st.c2)?st.c2:4,d1=st.d1===-1?-1:1,d2=st.d2===1?1:-1,on2=st.on2!==false;
+  const codeName=i=>`code ${i+1}: ${CODES[i].map(x=>x>0?"+1":"−1").join(" ")}`;
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · code division multiple access</span><h3>Two senders, one channel</h3><p class="pages"><b>Builds on</b> pp. 539–542 CDMA (§7.2.1)</p></div>
+  <p class="q">Each sender multiplies its data bit (+1 or −1) by its own 8-chip code; the channel adds the signals. A receiver multiplies what it hears by its sender's code, adds up, and divides by 8. Because the codes are orthogonal, the other sender's contribution cancels out. Try giving both senders the same code.</p>
+  <div class="controls"><label for="cd-c1">Sender 1 <select id="cd-c1">${CODES.map((_,i)=>`<option value="${i}">${codeName(i)}</option>`).join("")}</select></label><label for="cd-d1">bit <select id="cd-d1"><option value="1">+1</option><option value="-1">−1</option></select></label></div>
+  <div class="controls"><label for="cd-c2">Sender 2 <select id="cd-c2">${CODES.map((_,i)=>`<option value="${i}">${codeName(i)}</option>`).join("")}</select></label><label for="cd-d2">bit <select id="cd-d2"><option value="1">+1</option><option value="-1">−1</option></select></label><label><input type="checkbox" id="cd-on2"> sending</label></div>
+  <div id="cd-tbl"></div><div class="readout" id="cd-out" aria-live="polite"></div>`;
+  $("#cd-c1",el).value=c1;$("#cd-c2",el).value=c2;$("#cd-d1",el).value=d1;$("#cd-d2",el).value=d2;$("#cd-on2",el).checked=on2;
+  const fmtS=x=>x>0?`+${x}`:x<0?`−${-x}`:"0";
+  const draw=()=>{
+    const z1=encode(d1,CODES[c1]),z2=on2?encode(d2,CODES[c2]):CODES[c2].map(()=>0),z=channel([z1,z2]);
+    const r1=z.map((x,m)=>x*CODES[c1][m]),r2=z.map((x,m)=>x*CODES[c2][m]),o1=decode(z,CODES[c1]),o2=decode(z,CODES[c2]);
+    const row=(h,v,cls="")=>`<tr${cls?` class="${cls}"`:""}><th>${h}</th>${v.map(x=>`<td>${fmtS(x)}</td>`).join("")}</tr>`;
+    $("#cd-tbl",el).innerHTML=`<div class="tblwrap"><table class="cdma"><thead><tr><th></th>${[...Array(8)].map((_,m)=>`<th>m=${m+1}</th>`).join("")}</tr></thead><tbody>
+      ${row(`Sender 1 sends d·c (d = ${fmtS(d1)})`,z1)}${row(on2?`Sender 2 sends d·c (d = ${fmtS(d2)})`:"Sender 2 (silent)",z2)}${row("Channel: sum",z,"sum")}
+      ${row("Receiver 1: sum × code 1",r1)}${row("Receiver 2: sum × code 2",r2)}</tbody></table></div>`;
+    const ok1=o1===d1,ok2=!on2||o2===d2;
+    $("#cd-out",el).innerHTML=`Receiver 1: (${r1.map(fmtS).join(" + ")}) / 8 = <b>${fmtS(o1)}</b> ${ok1?"✓ sender 1's bit":"✗ not sender 1's bit"}. Receiver 2: ${fmtS(r2.reduce((a,b)=>a+b,0))} / 8 = <b>${fmtS(o2)}</b> ${on2?(ok2?"✓ sender 2's bit":"✗ not sender 2's bit"):"(nothing sent)"}.`+(c1===c2&&on2?" With the <b>same code</b>, the receivers can't tell the senders apart.":"");
+    keep.set({c1,c2,d1,d2,on2});};
+  el.addEventListener("change",()=>{c1=+$("#cd-c1",el).value;c2=+$("#cd-c2",el).value;d1=+$("#cd-d1",el).value;d2=+$("#cd-d2",el).value;on2=$("#cd-on2",el).checked;draw();});
+  draw();return el;
+}
+
+// Indirect and direct routing to a mobile device (Mobile IP terms).
+const MB={C:[90,150,"Correspondent","205.10.23.4"],H:[320,55,"Home network","home agent"],V:[550,150,"Visited network","foreign agent"],M:[550,255,"Mobile device","care-of 79.129.13.2"]};
+const MB_STEPS={
+  indirect:[
+    ["C","H","The correspondent sends to the mobile's <b>permanent address</b> 128.119.40.186, as if it were at home. Mobility is invisible to it.","dst 128.119.40.186"],
+    ["H","V","The <b>home agent</b> intercepts the datagram and <b>tunnels</b> it: it puts the whole datagram inside a new one addressed to the mobile's <b>care-of address</b> 79.129.13.2 in the visited network.","outer dst 79.129.13.2 · inner dst 128.119.40.186"],
+    ["V","M","The <b>foreign agent</b> removes the outer datagram (decapsulates) and delivers the original one, unchanged, to the mobile.","dst 128.119.40.186"],
+    ["M","C","The mobile replies <b>directly</b> to the correspondent, with its permanent address as source. Datagrams to the mobile always detour through the home network: the <b>triangle routing</b> problem. (4G instead tunnels replies back through the home network too.)","src 128.119.40.186 · dst correspondent"]],
+  direct:[
+    ["C","H","The correspondent first asks the home network (its home agent, or in 4G the HSS) <b>where the mobile is now</b>.","location query"],
+    ["H","C","The home network answers with the mobile's current <b>care-of address</b> 79.129.13.2. This needs a location protocol between correspondent and home.","reply: care-of address 79.129.13.2"],
+    ["C","V","The correspondent <b>tunnels</b> its datagram straight to the care-of address: no detour, no triangle routing.","outer dst 79.129.13.2 · inner dst 128.119.40.186"],
+    ["V","M","The foreign agent decapsulates and delivers it. The cost: if the mobile moves to yet another network mid-conversation, the correspondent's address is stale, so the first visited network must forward (act as an anchor).","dst 128.119.40.186"]]};
+export function widgetMobility(){
+  const el=document.createElement("article");el.className="card";
+  const keep=kept("mobility"),st=keep.get();
+  let mode=st.mode==="direct"?"direct":"indirect",step=Number.isInteger(st.step)?st.step:0;
+  el.innerHTML=`<div class="dhead"><span class="tag">Model · mobility management</span><h3>Indirect and direct routing to a mobile device</h3><p class="pages"><b>Builds on</b> pp. 580–587 direct and indirect routing (§7.5.3) and Mobile IP (§7.6.2)</p></div>
+  <p class="q">A mobile device with permanent address 128.119.40.186 (in its home network) is visiting another network, where it has the care-of address 79.129.13.2. Step through how a correspondent's datagram reaches it.</p>
+  <div class="controls"><label for="mb-mode">Approach <select id="mb-mode"><option value="indirect">Indirect routing</option><option value="direct">Direct routing</option></select></label><button class="btn" data-s="-1">← Back</button><button class="btn primary" data-s="1">Next step →</button><button class="btn ghost" data-s="0">Restart</button></div>
+  <div class="svgbox"><svg id="mb-svg" viewBox="0 0 640 300" role="img" aria-label="Correspondent, home network, visited network and mobile device"><defs><marker id="mbah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--accent)"/></marker></defs><g id="mb-g"></g></svg></div>
+  <div class="readout" id="mb-out" aria-live="polite"></div>`;
+  $("#mb-mode",el).value=mode;
+  const draw=()=>{const steps=MB_STEPS[mode];step=Math.max(0,Math.min(steps.length,step));
+    let g="";
+    steps.slice(0,step).forEach(([a,b],i)=>{const [x1,y1]=MB[a],[x2,y2]=MB[b],dx=x2-x1,dy=y2-y1,l=Math.hypot(dx,dy),ux=dx/l,uy=dy/l,off=(a==="H"&&b==="C")?14:(a==="C"&&b==="H")?-14:0,nx=-uy*off,ny=ux*off,on=i===step-1;
+      g+=`<line class="arw${on?" on":""}" x1="${x1+ux*62+nx}" y1="${y1+uy*30+ny}" x2="${x2-ux*62+nx}" y2="${y2-uy*30+ny}" marker-end="url(#mbah)"/><text class="arwlbl${on?" on":""}" x="${(x1+x2)/2+nx*2}" y="${(y1+y2)/2+ny*2-6}" text-anchor="middle">${i+1}</text>`;});
+    Object.entries(MB).forEach(([k,[x,y,t,s2]])=>{const cur=step>0&&(steps[step-1][0]===k||steps[step-1][1]===k);
+      g+=`<g class="node${cur?" on":""}"><rect x="${x-62}" y="${y-24}" width="124" height="48" rx="6"/><text x="${x}" y="${y-3}" text-anchor="middle">${t}</text><text class="sm" x="${x}" y="${y+13}" text-anchor="middle">${s2}</text></g>`;});
+    $("#mb-g",el).innerHTML=g;
+    $("#mb-out",el).innerHTML=step?`<b>Step ${step} of ${steps.length}:</b> ${steps[step-1][2]} <span class="mono">[${steps[step-1][3]}]</span>`:`<b>${mode==="indirect"?"Indirect":"Direct"} routing.</b> Press “Next step”.`;
+    keep.set({mode,step});};
+  el.addEventListener("click",e=>{const b=e.target.closest("[data-s]");if(!b)return;const k=+b.dataset.s;step=k===0?0:step+k;draw();});
+  $("#mb-mode",el).addEventListener("change",e=>{mode=e.target.value;step=0;draw();});
   draw();return el;
 }
 

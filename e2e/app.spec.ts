@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const MODULES = ["m1", "m2", "m3", "m4", "m5", "m6"];
+const MODULES = ["m1", "m2", "m3", "m4", "m5", "m6", "m7"];
 const SECTIONS = ["summary", "notes", "labs", "quiz", "resources"];
 
 // Fail any test that triggers a page error or a console error from our own code.
@@ -118,7 +118,7 @@ test("study notes: contents links, models and glossary filter", async ({ page })
 
 test("no horizontal scrolling at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs"]) {
+  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs", "/m7/notes", "/m7/labs"]) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
@@ -152,10 +152,11 @@ for (const [id, lecture, topic, note, label] of [
   ["m5", 0, "Link-state routing and Dijkstra's algorithm", "ls", "Lecture 10"],
   ["m5", 2, "ICMP: the Internet Control Message Protocol", "icmp", "Lecture 12"],
   ["m6", 0, "Link-layer switches", "switch", "Lecture 13"],
+  ["m7", 0, "CDMA", "cdma", "Lecture 14"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
     await page.goto(`/${id}`);
-    await expect(page.locator(".lecture")).toHaveCount(({ m3: 3, m5: 3, m6: 1 } as Record<string, number>)[id] ?? 2);
+    await expect(page.locator(".lecture")).toHaveCount(({ m3: 3, m5: 3, m6: 1, m7: 1 } as Record<string, number>)[id] ?? 2);
     await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
     await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
     await expect(page.locator(`#${id}-${note}`)).toBeInViewport();
@@ -310,5 +311,25 @@ test.describe("module 6 link-layer models", () => {
     await page.goto("/m6/notes");
     await page.locator("#al-n").fill("20");
     await expect(page.locator("#al-out")).toContainText("p = 1/N = 0.050");
+  });
+});
+
+test.describe("module 7 wireless and mobility models", () => {
+  test("CDMA: orthogonal codes decode both senders; the same code doesn't", async ({ page }) => {
+    await page.goto("/m7/notes");
+    await expect(page.locator("#cd-out")).toContainText("✓ sender 1's bit");
+    await expect(page.locator("#cd-out")).toContainText("✓ sender 2's bit");
+    await page.selectOption("#cd-c2", "0");
+    await expect(page.locator("#cd-out")).toContainText("same code");
+  });
+
+  test("mobility: indirect routing ends with triangle routing; direct starts with a location query", async ({ page }) => {
+    await page.goto("/m7/notes");
+    const model = page.locator("#m7-mobility");
+    for (let i = 0; i < 4; i++) await model.locator('[data-s="1"]').click();
+    await expect(page.locator("#mb-out")).toContainText("triangle routing");
+    await page.selectOption("#mb-mode", "direct");
+    await model.locator('[data-s="1"]').click();
+    await expect(page.locator("#mb-out")).toContainText("where the mobile is now");
   });
 });

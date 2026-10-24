@@ -240,3 +240,5 @@ header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
 .swbox{fill:var(--sunk);stroke:var(--line);stroke-width:1.6}
 .swlbl{fill:var(--muted);font-size:13px}
 .gedge.hotlink{stroke:var(--signal);stroke-width:4}
+table.cdma td{text-align:center;font-family:var(--f-mono);min-width:2.6em}
+table.cdma tr.sum td{background:var(--accent-soft);font-weight:700}
