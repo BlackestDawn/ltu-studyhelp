@@ -3,17 +3,20 @@ import { $, store } from "../lib/util.js";
 import { checkbox, bindChecklists } from "../lib/checklist.js";
 import { renderDrill } from "../lib/drill.js";
 import { renderMCQ } from "../lib/mcq.js";
-import { GA } from "../modules/index.js";
 
 export const SECTIONS = [
   { id: "summary", label: "Summary", hint: "The big picture, key takeaways, formulas and common traps." },
   { id: "notes", label: "Study notes", hint: "Section-by-section explanations with examples, interactive models and key terms." },
   { id: "labs", label: "Labs", hint: "Generated problems with answer checking and worked solutions." },
   { id: "quiz", label: "Concept check", hint: "Multiple-choice questions with the reasoning behind every answer." },
-  { id: "resources", label: "Resources", hint: "Course reading checklist, book problems and the authors' interactive exercises." },
+  { id: "resources", label: "Resources", hint: "Course reading checklist and further practice." },
 ];
 
-const link = (m, sec, text) => `<a href="/${m.id}/${sec}" data-link>${text}</a>`;
+// A course can rename a section or change its hint; the ids (and so the URLs) stay the same.
+export const sectionsFor = c => SECTIONS.map(s => ({ ...s, ...c.labels?.[s.id], ...(s.id === "resources" && c.resourcesHint ? { hint: c.resourcesHint } : {}) }));
+const label = (m, id) => sectionsFor(m.course).find(s => s.id === id).label;
+
+const link = (m, sec, text) => `<a href="${m.path}/${sec}" data-link>${text}</a>`;
 
 // Short lecture label ("Lecture 1") for a study-notes section, if the module maps lectures.
 const lectureOf = (m, noteId) => (m.lectures || []).find(l => l.notes.includes(noteId))?.title.split(":")[0];
@@ -22,8 +25,8 @@ function lectures(m) {
   if (!m.lectures?.length) return "";
   const title = id => m.notes.find(n => n.id === id)?.title ?? id;
   return `<section><h2>Lectures</h2><p class="sub">How this module's material maps onto the course lectures. Each topic links to its study notes.</p>
-    <div class="lectures">${m.lectures.map(l => `<div class="card lecture"><h3>${l.title}</h3><p class="pages"><b>Book</b> ${l.pages}</p>
-      <ul>${l.notes.map(id => `<li><a href="/${m.id}/notes#${m.id}-${id}" data-link>${title(id)}</a></li>`).join("")}</ul>
+    <div class="lectures">${m.lectures.map(l => `<div class="card lecture"><h3>${l.title}</h3><p class="pages"><b>Book</b> ${l.pages}${l.slides ? ` <b style="margin-left:8px">Slides</b> ${l.slides}` : ""}</p>
+      <ul>${l.notes.map(id => `<li><a href="${m.path}/notes#${m.id}-${id}" data-link>${title(id)}</a></li>`).join("")}</ul>
       <p><b>Focus:</b> ${l.focus}</p><p class="callout"><b>Key takeaway:</b> ${l.takeaway}</p></div>`).join("")}</div></section>`;
 }
 
@@ -41,9 +44,9 @@ function summary(m) {
   <section><h2>Common traps</h2><ul class="traps">${s.traps.map(t => `<li>${t}</li>`).join("")}</ul></section>
   <section><h2>Check yourself</h2>
     <div class="brief"><div class="focus"><div class="objhead">How to approach this module</div><p>${m.focus}</p>
-      <p>Next: read the ${link(m, "notes", "study notes")}, then test yourself in the ${link(m, "quiz", "concept check")} or the ${link(m, "labs", "labs")}.</p></div>
+      <p>Next: read the ${link(m, "notes", "study notes")}, then test yourself in the ${link(m, "quiz", label(m, "quiz").toLowerCase())} or the ${link(m, "labs", label(m, "labs").toLowerCase())}.</p></div>
     <div><div class="objhead">Learning objectives: tick when you can explain it aloud</div>
-      <ul class="objs">${m.obj.map((o, i) => checkbox(m.id + i, o)).join("")}</ul></div></div>
+      <ul class="objs">${m.obj.map((o, i) => checkbox(m.key + i, o)).join("")}</ul></div></div>
     ${m.questions ? `<div class="card study-qs"><div class="objhead">Questions you should be able to answer</div><ol>${m.questions.map(q => `<li>${q}</li>`).join("")}</ol></div>` : ""}
     ${m.concepts ? `<p class="concepts"><span class="objhead">Key concepts</span> ${m.concepts.map(c => `<span class="pill">${c}</span>`).join(" ")}</p>` : ""}</section>`;
   bindChecklists(el);
@@ -71,9 +74,9 @@ function notes(m) {
     count.textContent = `${shown} of ${items.length} terms`;
   };
   // The filter text is remembered per module in this browser.
-  const box = $("[data-filter]", el), saved = store.get(`gloss:${m.id}`, "");
+  const box = $("[data-filter]", el), saved = store.get(`gloss:${m.key}`, "");
   box.value = saved;
-  box.addEventListener("input", e => { filter(e.target.value); store.set(`gloss:${m.id}`, e.target.value); });
+  box.addEventListener("input", e => { filter(e.target.value); store.set(`gloss:${m.key}`, e.target.value); });
   filter(saved);
   return el;
 }
@@ -82,26 +85,19 @@ function labs(m) {
   const el = document.createElement("div");
   el.innerHTML = `<p class="sub">Fresh numbers every time. Use “New numbers” until you get each type right twice in a row. Stuck on the idea behind a lab? Each one says which pages it builds on, and the ${link(m, "notes", "study notes")} explain them.</p><div class="stack"></div>`;
   const stack = $(".stack", el);
-  m.drills.forEach(d => stack.appendChild(renderDrill(d, m.id)));
+  m.drills.forEach(d => stack.appendChild(renderDrill(d, m.key)));
   return el;
 }
 
 function quiz(m) {
   const el = document.createElement("div");
-  el.appendChild(renderMCQ(m.mcq, m.id));
+  el.appendChild(renderMCQ(m.mcq, m.key));
   return el;
 }
 
 function resources(m) {
   const el = document.createElement("div");
-  el.innerHTML = `<div class="more">
-    <div class="card"><h3>Course reading</h3><p class="sub" style="margin-top:4px">The pages your course lists as supporting material. Tick each one off as you read it.</p>
-      <ul class="objs" style="margin-top:6px">${m.read.map(([t, pg], i) => checkbox(`r${m.id}${i}`, `${t} <span class="mono" style="color:var(--muted)">pp. ${pg}</span>`)).join("")}</ul>
-      <p class="sub" style="margin-top:12px">Then try these end-of-chapter problems:</p><div>${m.probs.map(x => `<span class="pill">${x}</span>`).join(" ")}</div></div>
-    <div class="card"><h3>Authors' interactive problems</h3><p class="sub" style="margin-top:4px">Randomised problems from the book's authors, with answers.</p>
-      ${m.inter.length ? `<ul>${m.inter.map(([n, u]) => `<li><a href="${GA}${u}" target="_blank" rel="noopener">${n}</a></li>`).join("")}</ul>` : `<p class="sub" style="margin-top:6px">The authors have no interactive problems for this chapter; the AI tutor below covers it.</p>`}
-      <p style="font-size:.9rem;margin-top:8px"><a href="https://gaia.cs.umass.edu/kurose_ross/wireshark.php" target="_blank" rel="noopener">${m.lab}</a> · <a href="https://gaia.cs.umass.edu/kurose_ross/knowledgechecks/" target="_blank" rel="noopener">Knowledge checks</a> · <a href="https://gaia.cs.umass.edu/kurose_ross/tutor.php?bot=${m.tutor}" target="_blank" rel="noopener">Chapter ${m.tutor} AI tutor</a></p></div>
-  </div>`;
+  el.innerHTML = m.course.resources(m);
   bindChecklists(el);
   return el;
 }

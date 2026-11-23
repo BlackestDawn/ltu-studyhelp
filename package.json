@@ -1,6 +1,6 @@
 {
   "name": "ltu-studyhelp",
-  "description": "Networks Midterm Workbench: practice labs for Computer Networking (Kurose & Ross, 8th ed.)",
+  "description": "Study Workbench: notes, practice problems and concept checks for Computer Networking (Kurose & Ross) and Computer Security (Stallings & Brown)",
   "private": true,
   "version": "0.0.1",
   "type": "module",

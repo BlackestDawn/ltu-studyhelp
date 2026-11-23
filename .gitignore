@@ -6,6 +6,7 @@
 
 # course book: copyrighted, reference only, never commit or ship it
 *.pdf
+books/
 
 # local env files
 .env

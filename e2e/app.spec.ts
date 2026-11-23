@@ -22,31 +22,40 @@ test("health endpoint", async ({ request }) => {
   expect(await res.text()).toBe("ok");
 });
 
-test("home lists every module and links to it", async ({ page }) => {
+test("home lists the courses; a course lists its modules", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle("Networks Midterm Workbench");
+  await expect(page).toHaveTitle("Study Workbench");
+  await expect(page.locator(".coursecard")).toHaveCount(2);
+  await page.locator(".coursecard").first().click();
+  await expect(page).toHaveURL(/\/networks$/);
   await expect(page.locator(".modcard")).toHaveCount(MODULES.length);
   await page.locator(".modcard").nth(2).click();
-  await expect(page).toHaveURL(/\/m3$/);
+  await expect(page).toHaveURL(/\/networks\/m3$/);
   await expect(page.locator("h1")).toHaveText("The transport layer");
 });
 
+test("old module addresses redirect to the networks course", async ({ page }) => {
+  await page.goto("/m3/quiz#x");
+  await expect(page).toHaveURL(/\/networks\/m3\/quiz#x$/);
+  await expect(page.locator('.tab[aria-current="page"]')).toHaveAttribute("data-sec", "quiz");
+});
+
 test("module menu navigates without a full page reload", async ({ page }) => {
-  await page.goto("/m1");
+  await page.goto("/networks/m1");
   await page.evaluate(() => ((window as unknown as { spa: number }).spa = 1));
   await page.click("#menu summary");
   await page.click('#menu a[data-mod="m4"]');
-  await expect(page).toHaveURL(/\/m4$/);
+  await expect(page).toHaveURL(/\/networks\/m4$/);
   await expect(page).toHaveTitle(/Module 4/);
   expect(await page.evaluate(() => (window as unknown as { spa?: number }).spa)).toBe(1);
 });
 
 for (const id of MODULES) {
   test(`${id}: every section renders content`, async ({ page }) => {
-    await page.goto(`/${id}`);
+    await page.goto(`/networks/${id}`);
     for (const sec of SECTIONS) {
       await page.click(`.tab[data-sec="${sec}"]`);
-      await expect(page).toHaveURL(sec === "summary" ? new RegExp(`/${id}/summary$`) : new RegExp(`/${id}/${sec}$`));
+      await expect(page).toHaveURL(new RegExp(`/networks/${id}/${sec}$`));
       await expect(page.locator(`.tab[data-sec="${sec}"]`)).toHaveAttribute("aria-current", "page");
       const panel = page.locator(`[data-panel="${sec}"]`);
       await expect(panel).toBeVisible();
@@ -58,7 +67,7 @@ for (const id of MODULES) {
   });
 
   test(`${id}: every lab generates, checks and shows a solution`, async ({ page }) => {
-    await page.goto(`/${id}/labs`);
+    await page.goto(`/networks/${id}/labs`);
     for (const drill of await page.locator(".drill").all()) {
       await drill.locator('[data-act="new"]').click();
       await drill.locator('[data-act="check"]').click();
@@ -70,7 +79,7 @@ for (const id of MODULES) {
 }
 
 test("deep links, back and forward", async ({ page }) => {
-  await page.goto("/m2/quiz");
+  await page.goto("/networks/m2/quiz");
   await expect(page.locator('.tab[aria-current="page"]')).toHaveAttribute("data-sec", "quiz");
   await page.click('.tab[data-sec="notes"]');
   await page.goBack();
@@ -80,12 +89,12 @@ test("deep links, back and forward", async ({ page }) => {
 });
 
 test("unknown paths show a not-found page", async ({ page }) => {
-  await page.goto("/m99/whatever");
+  await page.goto("/networks/m99/whatever");
   await expect(page.locator("h1")).toHaveText("Page not found");
 });
 
 test("solving a lab counts towards progress and survives a reload", async ({ page }) => {
-  await page.goto("/m1/labs");
+  await page.goto("/networks/m1/labs");
   const drill = page.locator("#d-m1layers");
   await drill.locator('[data-act="sol"]').click();
   const answers = await drill.locator(".sol .key li code").allTextContents();
@@ -98,14 +107,14 @@ test("solving a lab counts towards progress and survives a reload", async ({ pag
 });
 
 test("ticked objectives persist and show on the home page", async ({ page }) => {
-  await page.goto("/m2");
+  await page.goto("/networks/m2");
   await page.check('[data-ck="m20"]');
-  await page.goto("/");
+  await page.goto("/networks");
   await expect(page.locator(".modcard").nth(1)).toContainText("1/8 objectives ticked");
 });
 
 test("study notes: contents links, models and glossary filter", async ({ page }) => {
-  await page.goto("/m2/notes");
+  await page.goto("/networks/m2/notes");
   await page.click('.toc a[href="#m2-dns"]');
   await expect(page).toHaveURL(/#m2-dns$/);
   await expect(page.locator("#m2-dns")).toBeInViewport();
@@ -118,14 +127,14 @@ test("study notes: contents links, models and glossary filter", async ({ page })
 
 test("no horizontal scrolling at phone width", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  for (const path of ["/", "/m1", "/m3/notes", "/m4/labs", "/m5/notes", "/m5/labs", "/m6/notes", "/m6/labs", "/m7/notes", "/m7/labs", "/m8/notes", "/m8/labs"]) {
+  for (const path of ["/", "/networks/m1", "/networks/m3/notes", "/networks/m4/labs", "/networks/m5/notes", "/networks/m5/labs", "/networks/m6/notes", "/networks/m6/labs", "/networks/m7/notes", "/networks/m7/labs", "/networks/m8/notes", "/networks/m8/labs"]) {
     await page.goto(path);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
 });
 
 test("numeric answers accept a comma as the decimal separator", async ({ page }) => {
-  await page.goto("/m1/labs");
+  await page.goto("/networks/m1/labs");
   const drill = page.locator("#d-m1delay");
   await drill.locator('[data-act="sol"]').click();
   const answers = await drill.locator(".sol .key li code").allTextContents();
@@ -136,7 +145,7 @@ test("numeric answers accept a comma as the decimal separator", async ({ page })
 
 test("formula sheets explain their symbols", async ({ page }) => {
   for (const id of ["m1", "m2", "m3", "m4"]) {
-    await page.goto(`/${id}`);
+    await page.goto(`/networks/${id}`);
     const rows = page.locator(".formulas tbody tr");
     const withVars = page.locator(".formulas tbody tr:has(.vars li)");
     expect(await withVars.count(), id).toBeGreaterThanOrEqual((await rows.count()) - 1);
@@ -157,7 +166,7 @@ for (const [id, lecture, topic, note, label] of [
   ["m8", 1, "Securing TCP connections: TLS", "tls", "Lecture 16"],
 ] as const) {
   test(`${id}: lecture map links to ${note}`, async ({ page }) => {
-    await page.goto(`/${id}`);
+    await page.goto(`/networks/${id}`);
     await expect(page.locator(".lecture")).toHaveCount(({ m3: 3, m5: 3, m6: 1, m7: 1 } as Record<string, number>)[id] ?? 2);
     await page.locator(".lecture").nth(lecture).getByRole("link", { name: topic }).click();
     await expect(page).toHaveURL(new RegExp(`/${id}/notes#${id}-${note}$`));
@@ -167,7 +176,7 @@ for (const [id, lecture, topic, note, label] of [
 }
 
 test("concept check shuffles options and still marks the right answer", async ({ page }) => {
-  await page.goto("/m3/quiz");
+  await page.goto("/networks/m3/quiz");
   const items = page.locator(".mcq > li");
   const order = async () => (await items.locator(".opt").allTextContents()).join("|");
   const before = await order();
@@ -184,7 +193,7 @@ test("concept check shuffles options and still marks the right answer", async ({
 
 test.describe("state survives a reload", () => {
   test("reading position", async ({ page }) => {
-    await page.goto("/m1/notes");
+    await page.goto("/networks/m1/notes");
     // Put the reader 120px into the "Delay, loss and throughput" section, just below the sticky tabs.
     await page.evaluate(() => {
       const tabs = document.querySelector("nav.tabs")!.getBoundingClientRect().bottom;
@@ -199,7 +208,7 @@ test.describe("state survives a reload", () => {
   });
 
   test("lab: same numbers, answers, solution and result; progress not counted twice", async ({ page }) => {
-    await page.goto("/m1/labs");
+    await page.goto("/networks/m1/labs");
     const drill = page.locator("#d-m1layers");
     await drill.locator('[data-act="sol"]').click();
     const answers = await drill.locator(".sol .key li code").allTextContents();
@@ -222,7 +231,7 @@ test.describe("state survives a reload", () => {
   });
 
   test("concept check: picks and option order", async ({ page }) => {
-    await page.goto("/m2/quiz");
+    await page.goto("/networks/m2/quiz");
     const items = page.locator(".mcq > li");
     await items.nth(0).locator(".opt").nth(2).click();
     await items.nth(5).locator(".opt").nth(0).click();
@@ -240,20 +249,20 @@ test.describe("state survives a reload", () => {
   });
 
   test("interactive models and glossary filter", async ({ page }) => {
-    await page.goto("/m3/notes");
+    await page.goto("/networks/m3/notes");
     await page.click('[data-e="demo"]');
     const cwnd = await page.textContent("#cw-out");
     await page.fill("[data-filter]", "window");
     const count = await page.textContent("[data-count]");
-    await page.goto("/m2/notes");
+    await page.goto("/networks/m2/notes");
     await page.selectOption("#dns-mode", "rc");
     await page.click('#m2-dns [data-d="1"]');
     await page.click('#m2-dns [data-d="1"]');
-    await page.goto("/m3/notes");
+    await page.goto("/networks/m3/notes");
     await expect(page.locator("#cw-out")).toHaveText(cwnd!);
     await expect(page.locator("[data-filter]")).toHaveValue("window");
     await expect(page.locator("[data-count]")).toHaveText(count!);
-    await page.goto("/m2/notes");
+    await page.goto("/networks/m2/notes");
     await expect(page.locator("#dns-mode")).toHaveValue("rc");
     await expect(page.locator("#dns-out")).toContainText("Message 2 of 8");
   });
@@ -261,7 +270,7 @@ test.describe("state survives a reload", () => {
 
 test.describe("module 5 routing models", () => {
   test("Dijkstra model reproduces the book's Figure 5.4 forwarding table", async ({ page }) => {
-    await page.goto("/m5/notes");
+    await page.goto("/networks/m5/notes");
     const model = page.locator("#m5-ls");
     for (let i = 0; i < 5; i++) await model.locator('[data-k="1"]').click();
     await expect(page.locator("#dj-out")).toContainText("v → (u, v), w → (u, x), x → (u, x), y → (u, x), z → (u, x)");
@@ -272,7 +281,7 @@ test.describe("module 5 routing models", () => {
   });
 
   test("distance-vector model: count-to-infinity, then poisoned reverse", async ({ page }) => {
-    await page.goto("/m5/notes");
+    await page.goto("/networks/m5/notes");
     const model = page.locator("#m5-dv");
     await model.locator('[data-s="1"]').click();
     await expect(page.locator("#dv-out")).toContainText("Routing loop");
@@ -290,7 +299,7 @@ test.describe("module 5 routing models", () => {
 
 test.describe("module 6 link-layer models", () => {
   test("learning switch: flood, learn, forward, filter", async ({ page }) => {
-    await page.goto("/m6/notes");
+    await page.goto("/networks/m6/notes");
     const send = async (from: string, to: string) => {
       await page.selectOption("#sw-src", from);
       await page.selectOption("#sw-dst", to);
@@ -310,7 +319,7 @@ test.describe("module 6 link-layer models", () => {
   });
 
   test("ALOHA model reports the optimum p = 1/N", async ({ page }) => {
-    await page.goto("/m6/notes");
+    await page.goto("/networks/m6/notes");
     await page.locator("#al-n").fill("20");
     await expect(page.locator("#al-out")).toContainText("p = 1/N = 0.050");
   });
@@ -318,7 +327,7 @@ test.describe("module 6 link-layer models", () => {
 
 test.describe("module 7 wireless and mobility models", () => {
   test("CDMA: orthogonal codes decode both senders; the same code doesn't", async ({ page }) => {
-    await page.goto("/m7/notes");
+    await page.goto("/networks/m7/notes");
     await expect(page.locator("#cd-out")).toContainText("✓ sender 1's bit");
     await expect(page.locator("#cd-out")).toContainText("✓ sender 2's bit");
     await page.selectOption("#cd-c2", "0");
@@ -326,7 +335,7 @@ test.describe("module 7 wireless and mobility models", () => {
   });
 
   test("mobility: indirect routing ends with triangle routing; direct starts with a location query", async ({ page }) => {
-    await page.goto("/m7/notes");
+    await page.goto("/networks/m7/notes");
     const model = page.locator("#m7-mobility");
     for (let i = 0; i < 4; i++) await model.locator('[data-s="1"]').click();
     await expect(page.locator("#mb-out")).toContainText("triangle routing");
@@ -338,7 +347,7 @@ test.describe("module 7 wireless and mobility models", () => {
 
 test.describe("module 8 security models", () => {
   test("RSA: the book's example keys encrypt and decrypt", async ({ page }) => {
-    await page.goto("/m8/notes");
+    await page.goto("/networks/m8/notes");
     await expect(page.locator("#rs-out")).toContainText("d = 29");
     await expect(page.locator("#rs-out")).toContainText("= 17");
     await page.selectOption("#rs-q", "11");
@@ -347,7 +356,7 @@ test.describe("module 8 security models", () => {
   });
 
   test("firewall: a crafted ACK passes the stateless ACL; an outside SYN doesn't", async ({ page }) => {
-    await page.goto("/m8/notes");
+    await page.goto("/networks/m8/notes");
     await page.selectOption("#fw-pre", "fake");
     await expect(page.locator("#fw-out")).toContainText("Allowed by rule 2");
     await expect(page.locator("#fw-out")).toContainText("stateful");
@@ -358,9 +367,119 @@ test.describe("module 8 security models", () => {
 
 test("every module's summary lists objectives, study questions and key concepts", async ({ page }) => {
   for (const id of MODULES) {
-    await page.goto(`/${id}`);
+    await page.goto(`/networks/${id}`);
     expect(await page.locator(".objs li").count(), id).toBeGreaterThanOrEqual(7);
     expect(await page.locator(".study-qs li").count(), id).toBeGreaterThanOrEqual(5);
     expect(await page.locator(".concepts .pill").count(), id).toBeGreaterThanOrEqual(12);
+  }
+});
+
+/* ---------- Computer and Network Security ---------- */
+const SEC = ["m1", "m2", "m3", "m4"];
+
+// Fill a practice problem's fields with the answers from its own answer key.
+async function solveFromKey(page: Page, id: string) {
+  const drill = page.locator(`#d-${id}`);
+  await drill.locator('[data-act="sol"]').click();
+  const answers = await drill.locator(".sol .key li code").allTextContents();
+  const fields = drill.locator(".fields .ctl > :first-child");
+  for (const [i, a] of answers.entries()) {
+    const f = fields.nth(i);
+    if (await f.evaluate(el => el.tagName === "SELECT")) await f.selectOption(a); else await f.fill(a);
+  }
+  await drill.locator('[data-act="check"]').click();
+  await expect(drill.locator(".feedback")).toContainText(`All ${answers.length} correct`);
+}
+
+test("security course page explains the assessment and lists four modules", async ({ page }) => {
+  await page.goto("/security");
+  await expect(page).toHaveTitle(/Computer and Network Security/);
+  await expect(page.locator(".assess .card")).toHaveCount(3);
+  await expect(page.locator(".modcard")).toHaveCount(4);
+  await expect(page.locator(".modcard").nth(2)).toContainText("Public-key cryptography");
+});
+
+for (const id of SEC) {
+  test(`security ${id}: every section renders content`, async ({ page }) => {
+    await page.goto(`/security/${id}`);
+    await expect(page.locator('.tab[data-sec="labs"]')).toContainText("Practice");
+    for (const sec of SECTIONS) {
+      await page.click(`.tab[data-sec="${sec}"]`);
+      await expect(page).toHaveURL(new RegExp(`/security/${id}/${sec}$`));
+      const panel = page.locator(`[data-panel="${sec}"]`);
+      const expected = { summary: ".takeaways li", notes: ".note", labs: ".drill", quiz: ".mcq > li", resources: ".objs li" }[sec]!;
+      expect(await panel.locator(expected).count()).toBeGreaterThan(0);
+    }
+  });
+
+  test(`security ${id}: every practice problem generates, checks and shows a solution`, async ({ page }) => {
+    await page.goto(`/security/${id}/labs`);
+    for (const drill of await page.locator(".drill").all()) {
+      await drill.locator('[data-act="new"]').click();
+      await drill.locator('[data-act="check"]').click();
+      await expect(drill.locator(".feedback")).toContainText("correct");
+      await drill.locator('[data-act="sol"]').click();
+      await expect(drill.locator(".sol .key li").first()).toBeVisible();
+    }
+  });
+}
+
+test("security progress is counted separately from networks", async ({ page }) => {
+  await page.goto("/security/m1/labs");
+  await solveFromKey(page, "s1modes");
+  await expect(page.locator('.tab[data-sec="labs"] .sc')).toHaveText("1 solved");
+  await expect(page.locator('#menu [data-sc="sec-m1"]')).toHaveText("1 solved");
+  await expect(page.locator('#menu [data-sc="m1"]')).toBeHidden();
+});
+
+test("Quiz 4 practice: the answer key for a generated SSL capture is accepted", async ({ page }) => {
+  await page.goto("/security/m4/labs");
+  await solveFromKey(page, "s4ssl");
+  await expect(page.locator("#d-s4ssl .q pre").last()).toContainText("0030");
+});
+
+test("resources link a quiz to its practice problem", async ({ page }) => {
+  await page.goto("/security/m3/resources");
+  await page.getByRole("link", { name: "RSA signature (Quiz 2 setting)" }).click();
+  await expect(page).toHaveURL(/\/security\/m3\/labs#d-s3sign$/);
+  await expect(page.locator("#d-s3sign")).toBeInViewport();
+});
+
+test.describe("security models", () => {
+  test("modes: the lecture example encrypts as on the slides (with the CFB slip corrected)", async ({ page }) => {
+    await page.goto("/security/m1/notes");
+    await page.fill("#md-pt", "1011 1011 1011");
+    await page.selectOption("#md-iv", "13");
+    await expect(page.locator("#md-out")).toContainText("ECB 1010 1010 1010 · CBC 0001 0110 1011 · CFB 0000 0010 0101");
+  });
+
+  test("naive hash: the forged block restores the hash", async ({ page }) => {
+    await page.goto("/security/m1/notes");
+    await expect(page.locator("#hf-out")).toContainText("M? = 1000 ⊕ 0111 = 1111");
+    await expect(page.locator("#hf-out")).toContainText("✓");
+  });
+
+  test("ECC: 9G on the lecture's curve is (7, 6)", async ({ page }) => {
+    await page.goto("/security/m3/notes");
+    await page.selectOption("#ec-c", "0");
+    await page.locator("#ec-k").fill("9");
+    await expect(page.locator("#ec-out")).toContainText("9G = (7, 6)");
+    await expect(page.locator("#ec-out")).toContainText("order n = 19");
+  });
+
+  test("KDC: the replay run ends with Y accepting the attacker", async ({ page }) => {
+    await page.goto("/security/m4/notes");
+    await page.selectOption("#kd-mode", "replay");
+    for (let i = 0; i < 3; i++) await page.click('#m4-kdc [data-k="1"]');
+    await expect(page.locator("#kd-out")).toContainText("Message 3 of 3");
+    await expect(page.locator("#kd-out")).toContainText("accepts Z as X");
+  });
+});
+
+test("security pages: no horizontal scrolling at phone width", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const path of ["/security", "/security/m1/notes", "/security/m1/labs", "/security/m3/notes", "/security/m3/labs", "/security/m4/notes", "/security/m4/labs", "/security/m2/resources"]) {
+    await page.goto(path);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), path).toBe(true);
   }
 });

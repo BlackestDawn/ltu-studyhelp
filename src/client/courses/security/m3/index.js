@@ -1,0 +1,63 @@
+import { S3_DRILLS, S3_MCQ } from "./practice.js";
+import study from "./study.js";
+
+export default {
+  id: "m3", num: 3,
+  eyebrow: "Lectures 5–6 · Quiz 2 · Lab 3",
+  short: "Public-key crypto",
+  title: "Public-key cryptography, signatures and key exchange",
+  blurb: "RSA from the modular arithmetic up, why textbook RSA needs padding, digital signatures, Diffie–Hellman key exchange and its man-in-the-middle problem, and elliptic-curve cryptography.",
+  focus: "Quiz 2 is calculation-heavy: be fluent with φ(n), modular inverses (extended Euclid) and fast modular exponentiation, and know which key does what. Signing uses the private key, verifying the public one. Then understand the ideas around the numbers: why textbook RSA is unsafe, why Diffie–Hellman needs authentication, and why ECC gets the same security from much smaller keys.",
+  obj: [
+    "Explain the difference between symmetric-key and public-key cryptography and why hybrid encryption combines them",
+    "Compute modular arithmetic, Euler's totient φ(n) and modular inverses with the extended Euclidean algorithm",
+    "Generate an RSA key pair and encrypt and decrypt small numbers by hand",
+    "Explain the weaknesses of textbook RSA and how PKCS#1 v1.5 and OAEP padding address them",
+    "Sign a message digest with RSA and verify the signature, and explain how signatures give authentication, integrity and non-repudiation",
+    "Carry out a Diffie–Hellman key exchange and explain the man-in-the-middle attack on it",
+    "Add and double points on an elliptic curve over a finite field",
+    "Explain ECDH and ECDSA at a high level and compare ECC with RSA in key size and efficiency",
+  ],
+  concepts: ["Public / private key", "Hybrid encryption", "Modular arithmetic", "Euler's totient", "Multiplicative inverse", "Extended Euclid", "RSA", "Textbook RSA", "PKCS#1 v1.5", "OAEP", "Digital signature", "Non-repudiation", "Diffie–Hellman", "Discrete logarithm", "Man in the middle", "Elliptic curve", "ECDH", "ECDSA"],
+  questions: [
+    "Why can anyone encrypt to Bob, but only Bob decrypt, and why does that not tell Bob who sent the message?",
+    "Given p, q and e, how do you get d, and why does knowing n and e not reveal it?",
+    "What goes wrong with textbook RSA when m is small, when m ≥ n, or when the same message is sent twice?",
+    "Why is the hash signed rather than the message, and what does a verifier compute?",
+    "How do Alice and Bob end up with the same Diffie–Hellman key, and how can Darth sit between them?",
+    "What does “multiplying” a point by k mean on an elliptic curve, and why is going back hard?",
+    "Why does a 256-bit ECC key match a 3072-bit RSA key?",
+  ],
+  read: [["§21.4 The RSA public-key encryption algorithm", "669–675"], ["§21.5 Diffie-Hellman and other asymmetric algorithms", "675–679"], ["§21.6 Key terms, review questions and problems", "679–682"], ["§2.3–2.4 Public-key encryption, digital signatures and key management (overview)", "67–77"]],
+  probs: ["Review question 21.4 (one-way function)", "Review question 21.5 (Diffie-Hellman)", "Problem 21.6 (RSA by hand, a–e)", "Problem 21.7 (decrypt C = 61)", "Problem 21.8 (Harry's private key)", "Problem 21.11 (letter-by-letter RSA)", "Problem 21.12 (Diffie-Hellman with q = 23)"],
+  slides: ["L04 Public Key Cryptography (Lecture 5)", "L05 Elliptic Curve Cryptography (Lecture 6)"],
+  lab: {
+    name: "Lab 3: Public-key encryption",
+    what: "Implement RSA key generation, encryption, decryption, signing and verification with big-number arithmetic, and check real signatures and certificates.",
+    seed: "RSA Public-Key Encryption and Signature Lab", url: "Labs_20.04/Crypto/Crypto_RSA/",
+    explain: [
+      "How you derived d from p, q and e, and how you checked it",
+      "Why decrypting the ciphertext gives back the original message (Euler's theorem)",
+      "What happens to verification when one bit of the message or signature changes",
+      "Why real systems sign a hash and use padding, rather than raw textbook RSA",
+    ],
+  },
+  quizzes: [{
+    name: "Quiz 2: Public-key cryptography",
+    what: "Calculations and theory from Lectures 5–6.",
+    known: "Linda signs a message whose digest is 0x00 0x00 0x00 0x09 (that is, 9) with RSA, choosing p = 11 and q = 23.",
+    practice: [["s3sign", "RSA signature (Quiz 2 setting)"], ["s3rsa", "RSA by hand"], ["s3euler", "Totients and inverses"], ["s3dh", "Diffie–Hellman"], ["s3ecc", "Point addition"], ["s3ecdh", "ECDH"]],
+  }],
+  lectures: [
+    { title: "Lecture 5: Public-key cryptography", pages: "§21.4 (pp. 669–675)", slides: "L04",
+      notes: ["pke", "math", "rsa", "textbook", "sign"],
+      focus: "Get the arithmetic mechanical (φ, inverses, modular powers), then RSA key generation, encryption and signing. Understand why textbook RSA is never used as is.",
+      takeaway: "RSA rests on how hard it is to factor n = pq. Public key (e, n), private key d with ed ≡ 1 mod φ(n). Signing applies the private key to a hash; real systems add padding and use RSA only for keys and signatures (hybrid encryption)." },
+    { title: "Lecture 6: Diffie–Hellman and elliptic-curve cryptography", pages: "§21.5–21.6 (pp. 675–682)", slides: "L05",
+      notes: ["dh", "ecc", "ecapps"],
+      focus: "Do a Diffie–Hellman exchange by hand and explain the MITM attack. For ECC, practise point doubling and addition mod p, then see how the same exchange works with points instead of powers.",
+      takeaway: "Diffie–Hellman lets two strangers agree a secret over an open channel, but without authentication a man in the middle can agree one with each. ECC does the same with points on a curve: k·G is easy, recovering k is hard, so much smaller keys give the same security." },
+  ],
+  drills: S3_DRILLS, mcq: S3_MCQ,
+  ...study,
+};

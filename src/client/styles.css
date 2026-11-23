@@ -164,12 +164,14 @@ header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
 .menu summary::-webkit-details-marker{display:none}
 .menu summary::after{content:" ▾";color:var(--muted)}
 .menu summary:hover,.menu[open] summary{border-color:var(--accent)}
-.menu ol{position:absolute;right:0;top:calc(100% + 6px);z-index:20;list-style:none;margin:0;padding:6px;width:max-content;min-width:240px;max-width:calc(100vw - 32px);background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.14)}
+.menu ol{position:absolute;right:0;top:calc(100% + 6px);z-index:20;list-style:none;margin:0;padding:6px;width:max-content;min-width:240px;max-width:calc(100vw - 32px);max-height:calc(100dvh - 80px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:10px;box-shadow:0 10px 30px rgba(0,0,0,.14)}
 .menu a{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:6px;color:var(--ink);text-decoration:none;font-size:.94rem}
 .menu a:hover{background:var(--sunk)}
 .menu a[aria-current]{background:var(--accent-soft);font-weight:700}
 .menu .n{font-family:var(--f-mono);font-size:.75rem;color:var(--muted);min-width:2.2em}
 .menu .sc{margin-left:auto}
+.menu .grp:not(:first-child){margin-top:6px;padding-top:6px;border-top:1px solid var(--line)}
+.menu .grp a{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:6px 10px 4px}
 
 /* module page */
 .modhead{padding-block:18px 10px}
@@ -190,6 +192,10 @@ header.bar{background:var(--surface);border-bottom:1px solid var(--line)}
 .modcard h3{color:var(--ink)}
 .modcard p{color:var(--muted);font-size:.93rem;margin:0 0 4px}
 .modcard .meta{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+.foot-note{margin-top:28px;font-size:.88rem}
+.assess{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px;margin-top:12px}
+.assess ul{margin:6px 0 0;padding-left:20px;font-size:.93rem}
+.assess p{font-size:.93rem}
 
 /* summary + study notes */
 .prose{max-width:72ch}
