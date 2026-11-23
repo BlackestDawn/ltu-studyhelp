@@ -2,7 +2,7 @@
 
 Study app for two courses:
 
-- **Computer Networks** (`/networks`): *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–8, eight modules.
+- **Computer Networks** (`/networks`, Z0025E): *Computer Networking: A Top-Down Approach* (Kurose & Ross, 8th ed.), chapters 1–8, eight modules following the sixteen lectures.
 - **Computer and Network Security** (`/security`, Z0026E): *Computer Security: Principles and Practice* (Stallings & Brown, 4th ed.), four modules following the lectures, with practice in the style of the four Canvas quizzes.
 
 Each module has a summary, study notes with interactive models, generated problems with answer checking and worked solutions, a concept check, and links to further resources.
@@ -71,13 +71,13 @@ src/
           study.js     summary, study notes and key terms
 ```
 
-Each module page has five sections, each with its own URL (a course can rename a section; the security course calls Labs “Practice”):
+Each module page has five sections, each with its own URL (a course can rename a section; both courses label the `labs` section “Practice”, since their real labs are separate):
 
 | Path | Section | Contents |
 |---|---|---|
 | `/networks/m1` | Summary | big picture, key takeaways, formula sheet, common traps, learning objectives |
 | `/networks/m1/notes` | Study notes | one section per topic, with examples, interactive models and key terms |
-| `/networks/m1/labs` | Labs / Practice | generated problems with answer checking and worked solutions |
+| `/networks/m1/labs` | Practice | generated problems with answer checking and worked solutions |
 | `/networks/m1/quiz` | Concept check | multiple-choice questions with explanations |
 | `/networks/m1/resources` | Resources | reading checklist and the course's further material |
 

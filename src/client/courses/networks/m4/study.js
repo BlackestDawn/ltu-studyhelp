@@ -83,7 +83,7 @@ notes: [
  <li><b>Round robin</b>: take turns between classes, skipping empty ones.</li>
  <li><b>Weighted fair queuing (WFQ)</b>: round robin where class i is guaranteed a share wᵢ/Σw of the link.</li>
  </ul>
- <p>These choices connect to the policy debate on <b>net neutrality</b>: whether ISPs may block, throttle or prioritise traffic.</p>`},
+ <p><b>Network neutrality</b> (Lecture 8 sidebar): the principle that an ISP should treat Internet traffic equally. Technically it is a question of how an ISP shares its resources, and packet scheduling and buffer management are exactly the mechanisms it would use to favour or slow some traffic. The arguments for it are social and economic: protecting free speech and keeping competition fair between big and small companies' traffic. It is enforced as legal rules and policies, which differ between countries (and are outside the course's scope).</p>`},
 {id: "ipv4", title: "The IPv4 datagram and fragmentation", ref: "§4.3.1 · pp. 331–333",
  gist: "A 20-byte header (without options) that every router reads, and partly rewrites, at every hop.",
  body: `<p>The <b>IP protocol</b> itself defines three things: the <b>datagram format</b>, the <b>addressing</b> (how addresses are structured and interpreted), and <b>packet-handling conventions</b> such as fragmentation. Routing is not part of IP; it belongs to the control plane.</p>

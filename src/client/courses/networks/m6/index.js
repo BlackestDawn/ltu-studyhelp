@@ -24,7 +24,7 @@ export default {
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   // The course skips §6.2 (error detection and correction).
   lectures: [
-    { title: "Lecture 13: The link layer", pages: "pp. 450–454, 461–501",
+    { title: "Lecture 13: The link layer", pages: "pp. 450–454, 461–501", slides: "L13", keys: ["<b>Hop-by-hop delivery</b>: frames carry IP datagrams across one link; the NIC and its driver implement the link layer.", "<b>Three MAC approaches</b>: channel partitioning, random access and taking turns.", "<b>Random access</b>: ALOHA and CSMA trade simplicity against collisions and useful channel time.", "<b>MAC and ARP</b>: MAC addresses identify local interfaces; ARP maps an IPv4 address to a MAC address on the LAN.", "<b>Ethernet</b>: frames with MAC addresses; shared Ethernet used CSMA/CD, modern full-duplex links avoid collisions."],
       notes: ["intro", "access", "random", "turns", "arp", "ethernet", "switch", "vlan"],
       focus: "Follow the journey of an IP datagram across a single link: how it is encapsulated into a frame, how the sender finds the right MAC address, how access to the link is coordinated, and how an Ethernet switch decides where the frame goes.",
       takeaway: "The link layer gives hop-by-hop communication between neighbouring devices. Datagrams are wrapped in frames, link-layer addresses identify interfaces on the local network, and multiple-access protocols and Ethernet switching decide how frames cross each link." },

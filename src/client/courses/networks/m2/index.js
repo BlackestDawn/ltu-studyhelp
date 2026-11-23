@@ -24,11 +24,11 @@ export default {
   lab: "Wireshark labs: HTTP, DNS", tutor: 2,
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   lectures: [
-    { title: "Lecture 3: Principles of network applications, email, DNS and sockets", pages: "pp. 82–95, 116–136, 152–165",
+    { title: "Lecture 3: Principles of network applications, email, DNS and sockets", pages: "pp. 82–95, 116–136, 152–165", slides: "L03",
       notes: ["principles", "email", "dns", "sockets"],
       focus: "Understand how applications on different end systems communicate through processes and sockets, and how an application's needs decide its transport service. Use email and DNS as examples of how application-layer protocols solve different problems.",
       takeaway: "Network applications run at the edge and communicate by exchanging messages between processes through sockets. Application-layer protocols define how those messages are exchanged; TCP and UDP offer different services to suit what each application needs." },
-    { title: "Lecture 4: Web and HTTP, P2P, video streaming and CDNs", pages: "pp. 95–116, 136–152",
+    { title: "Lecture 4: Web and HTTP, P2P, video streaming and CDNs", pages: "pp. 95–116, 136–152", slides: "L04", keys: ["<b>HTTP is request/response</b> over a client–server model; it is stateless, and cookies add state across transactions.", "<b>Performance depends on connection use</b>: persistent connections, caching and newer HTTP versions cut delay and avoid needless transfers.", "<b>P2P changes who serves</b>: peers are clients and servers, so each new peer adds upload capacity as well as demand.", "<b>Streaming must adapt</b>: buffering absorbs delay variation; DASH matches video quality to the bandwidth available now.", "<b>CDNs bring content closer</b>: replicas on distributed servers improve scalability and avoid long or congested paths."],
       notes: ["http", "p2p", "video"],
       focus: "See how application-layer design choices affect communication, performance and scale: how HTTP structures client-server exchanges, why caching helps, and why P2P and CDNs matter as the number of users grows.",
       takeaway: "Application-layer protocols decide how applications exchange messages and services. HTTP shows client-server communication; P2P systems and CDNs show how distributed designs keep content delivery scalable as applications grow." },

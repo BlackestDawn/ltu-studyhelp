@@ -24,15 +24,15 @@ export default {
   lab: "Wireshark labs: TCP, UDP", tutor: 3,
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   lectures: [
-    { title: "Lecture 5: Reliable data transfer and TCP reliable data transfer", pages: "pp. 200–246",
+    { title: "Lecture 5: Reliable data transfer and TCP reliable data transfer", pages: "pp. 200–246", slides: "L05", keys: ["<b>Reliability needs feedback</b> between sender and receiver.", "<b>Detect → ACK → retransmit</b>: checksums, ACKs, sequence numbers and timeouts.", "<b>Stop-and-wait → pipelining</b>: several packets in flight improve utilisation.", "<b>Go-Back-N vs Selective Repeat</b>: cumulative versus individual recovery.", "<b>TCP's reliable byte stream</b>: sequence numbers, cumulative ACKs, an adaptive timeout and fast retransmit."],
       notes: ["rdt", "tcp"],
       focus: "Don't memorise each rdt protocol on its own. Ask what problem each new mechanism solves: why checksums, ACKs, sequence numbers, timers, retransmission and pipelining become necessary as the channel gets worse.",
       takeaway: "Reliable transfer combines mechanisms that detect errors or loss with ways for sender and receiver to coordinate recovery: checksums, ACKs, sequence numbers, timers, retransmission and pipelining. TCP applies the same principles to deliver a reliable, ordered byte stream." },
-    { title: "Lecture 6: TCP flow control, congestion control and transport evolution", pages: "pp. 246–282",
+    { title: "Lecture 6: TCP flow control, congestion control and transport evolution", pages: "pp. 246–282", slides: "L06", keys: ["<b>Flow control protects the receiver</b>: rwnd tells the sender how much buffer space is free.", "<b>Connection management</b>: the 3-way handshake establishes the connection and synchronises initial state.", "<b>Congestion protects the network</b>: too many senders injecting too much data; delay and loss are the consequences.", "<b>TCP adapts its rate</b>: cwnd, slow start, AIMD and loss signals regulate how fast it sends.", "<b>Evolution, TCP → QUIC</b>: reliability, congestion control and security over UDP with multiplexed streams."],
       notes: ["tcp-conn", "cc-principles", "tcp-cc", "quic"],
       focus: "Keep flow control and congestion control apart: flow control protects the receiver, congestion control protects the network. Think dynamically: what does the sender observe, what does it infer, and how should its rate change?",
       takeaway: "TCP has to respect both the receiver and the network. Flow control limits sending to what the receiver can take; congestion control keeps adapting the rate to network conditions. Together with reliable transfer and connection management, they give robust end-to-end communication." },
-    { title: "Lecture 7: Transport-layer services, multiplexing and demultiplexing, and UDP", pages: "pp. 182–200",
+    { title: "Lecture 7: Transport-layer services, multiplexing and demultiplexing, and UDP", pages: "pp. 182–200", slides: "L07",
       notes: ["services", "mux", "udp"],
       focus: "See how the transport layer turns host-to-host communication into process-to-process communication: how port numbers and socket information get each segment to the right application, and why an application might pick UDP's simple service.",
       takeaway: "The transport layer gives logical communication between processes. Multiplexing and demultiplexing let many processes share the network, and TCP and UDP offer different services to suit each application. UDP is simple, connectionless and best-effort, with minimal overhead." },

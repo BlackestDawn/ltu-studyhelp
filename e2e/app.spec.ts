@@ -34,6 +34,21 @@ test("home lists the courses; a course lists its modules", async ({ page }) => {
   await expect(page.locator("h1")).toHaveText("The transport layer");
 });
 
+test("networks course page explains the assessment; lecture cards show slides and key takeaways", async ({ page }) => {
+  await page.goto("/networks");
+  await expect(page).toHaveTitle(/^Computer Networks/);
+  await expect(page.locator(".assess .card")).toHaveCount(3);
+  await expect(page.locator(".assess")).toContainText("Midterm 2: modules 5–8");
+  await page.goto("/networks/m3");
+  await expect(page.locator('.tab[data-sec="labs"]')).toContainText("Practice");
+  const lecture = page.locator(".lecture").first();
+  await expect(lecture.locator(".pages")).toContainText("Slides L05");
+  await lecture.locator(".keys summary").click();
+  await expect(lecture.locator(".keys li")).toHaveCount(5);
+  await page.goto("/networks/m3/resources");
+  await expect(page.locator(".more")).toContainText("[Z0025E] L07");
+});
+
 test("old module addresses redirect to the networks course", async ({ page }) => {
   await page.goto("/m3/quiz#x");
   await expect(page).toHaveURL(/\/networks\/m3\/quiz#x$/);

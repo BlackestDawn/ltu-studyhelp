@@ -42,7 +42,7 @@ export function courseView(c) {
     ["Read first", `Start with a module's <b>${S.summary}</b> for the big picture, then work through the <b>${S.notes}</b> section by section.`],
     ["Learn by doing", `Go straight to the <b>${S.labs}</b>: every problem has fresh numbers, answer checking and a worked solution.`],
     ["Test yourself", `Use the <b>${S.quiz}</b> to find gaps. Every answer explains why each option is right or wrong.`],
-    ["Go further", `<b>${S.resources}</b> lists the course reading${c.id === "networks" ? ", end-of-chapter problems and the book authors' own exercises" : ", the lecture slides, the book's review questions and the module's lab"}.`],
+    ["Go further", `<b>${S.resources}</b> lists the course reading, the lecture slides${c.id === "networks" ? ", end-of-chapter problems and the book authors' own exercises" : ", the book's review questions and the module's lab and quiz"}.`],
   ];
   el.innerHTML = `
   <header class="top"><div class="wrap">

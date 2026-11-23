@@ -130,7 +130,8 @@ notes: [
  <tr><td>Tampering with data in transit</td><td><b>Integrity checks</b>, <b>digital signatures</b></td><td>Detect that a message was changed.</td></tr>
  <tr><td>Unauthorised use of resources</td><td><b>Access control</b></td><td>Defines who may take which actions, after they have proved their identity.</td></tr>
  <tr><td>DoS floods, malware, unwanted traffic</td><td><b>Firewalls</b>, intrusion detection</td><td>Filter traffic and detect or stop attacks before they reach hosts.</td></tr>
- </tbody></table></div>`},
+ </tbody></table></div>
+ <p><b>Lines of defence</b> (Lecture 2): <b>authentication</b> (proving you are who you say you are; cellular networks have a hardware identity in the SIM card, the traditional Internet has no such help), <b>confidentiality</b> through encryption, <b>integrity checks</b> (digital signatures prevent or detect tampering), <b>access restrictions</b> (password-protected VPNs), and <b>firewalls</b>, specialised middleboxes that are off by default, filter incoming packets by sender, receiver and application, and detect and react to DoS attacks. Module 8 returns to all of them.</p>`},
 ],
 glossary: [
   ["Host / end system", "A device at the edge of the network that runs applications: a laptop, phone, server or IoT device."],

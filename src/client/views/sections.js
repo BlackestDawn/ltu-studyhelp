@@ -27,7 +27,8 @@ function lectures(m) {
   return `<section><h2>Lectures</h2><p class="sub">How this module's material maps onto the course lectures. Each topic links to its study notes.</p>
     <div class="lectures">${m.lectures.map(l => `<div class="card lecture"><h3>${l.title}</h3><p class="pages"><b>Book</b> ${l.pages}${l.slides ? ` <b style="margin-left:8px">Slides</b> ${l.slides}` : ""}</p>
       <ul>${l.notes.map(id => `<li><a href="${m.path}/notes#${m.id}-${id}" data-link>${title(id)}</a></li>`).join("")}</ul>
-      <p><b>Focus:</b> ${l.focus}</p><p class="callout"><b>Key takeaway:</b> ${l.takeaway}</p></div>`).join("")}</div></section>`;
+      <p><b>Focus:</b> ${l.focus}</p><p class="callout"><b>Key takeaway:</b> ${l.takeaway}</p>
+      ${l.keys ? `<details class="keys"><summary>The slides' five key takeaways</summary><ol>${l.keys.map(k => `<li>${k}</li>`).join("")}</ol></details>` : ""}</div>`).join("")}</div></section>`;
 }
 
 function summary(m) {

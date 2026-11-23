@@ -22,7 +22,7 @@ export default {
   lab: "Wireshark lab: 802.11", tutor: 7,
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   lectures: [
-    { title: "Lecture 14: Wireless and mobile networks", pages: "pp. 532–596",
+    { title: "Lecture 14: Wireless and mobile networks", pages: "pp. 532–596", slides: "L14", keys: ["<b>Wireless links</b> suffer attenuation, interference and multipath; SNR, BER and modulation set the achievable rate.", "<b>Multiple access</b>: CDMA separates users by codes; Wi-Fi uses CSMA/CA, backoff and optional RTS/CTS.", "<b>Wi-Fi connectivity</b>: devices find APs by passive or active scanning, associate with a BSS and exchange frames.", "<b>Cellular architecture</b>: 4G LTE separates radio access from the core (EPC); control functions manage connectivity, gateways carry traffic.", "<b>Mobility and performance</b>: handover and roaming keep connectivity, but wireless loss and delay affect TCP and real-time traffic."],
       notes: ["intro", "links", "cdma", "wifi", "csmaca", "cellular", "mobility", "practice", "impact"],
       focus: "Keep wireless communication and mobility conceptually separate. A device can communicate wirelessly without moving; a mobile device adds the challenge of changing its point of attachment. For each mechanism, ask whether it solves a wireless-link problem or a mobility problem.",
       takeaway: "Wireless networking brings a variable, shared medium; mobility adds the challenge of keeping communication going as a device changes its point of attachment. Wi-Fi and cellular networks provide wireless access in different ways, and mobility management lets communication continue as users move." },

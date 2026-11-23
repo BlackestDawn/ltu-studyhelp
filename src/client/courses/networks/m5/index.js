@@ -24,15 +24,15 @@ export default {
   lab: "Wireshark lab: ICMP", tutor: 5,
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   lectures: [
-    { title: "Lecture 10: Control plane and routing algorithms", pages: "pp. 378–395",
+    { title: "Lecture 10: Control plane and routing algorithms", pages: "pp. 378–395", slides: "L10", keys: ["<b>Control vs data plane</b>: the control plane computes paths and forwarding information; the data plane forwards packets.", "<b>Link costs</b>: routing models the network as a graph with operator-set costs.", "<b>Link state</b>: Dijkstra computes least-cost paths at each router from the shared global topology.", "<b>Distance vector</b>: Bellman–Ford iteratively updates costs from neighbours' distance estimates.", "<b>Trade-offs</b>: link state can oscillate with load-based costs; distance vector can loop and count to infinity."],
       notes: ["intro", "routing", "ls", "dv"],
       focus: "Ask what information each routing approach has and how it uses it. Link state needs a global view of the network; distance vector learns routes through repeated exchanges with neighbours. Understand why, rather than memorising the algorithms mechanically.",
       takeaway: "Routing algorithms decide which paths packets follow. Link-state routing computes routes from a global view of the topology; distance-vector routing computes them through distributed exchanges between neighbours. Both look for good paths, but differ in what each router knows and how that knowledge spreads." },
-    { title: "Lecture 11: OSPF, BGP and OpenFlow", pages: "pp. 395–419",
+    { title: "Lecture 11: OSPF, BGP and OpenFlow", pages: "pp. 395–419", slides: "L11",
       notes: ["ospf", "bgp", "sdn"],
       focus: "See how the routing principles are put into practice: OSPF inside an autonomous system, BGP between them, and SDN controllers using OpenFlow. Keep the different roles of OSPF and BGP apart rather than treating them as interchangeable.",
       takeaway: "The Internet scales its routing by grouping routers into autonomous systems: OSPF (link state) computes paths inside an AS, while BGP spreads reachability between ASes and lets policy decide which routes are used. SDN moves route computation into a logically centralised controller that programs switches through OpenFlow." },
-    { title: "Lecture 12: ICMP and network management", pages: "pp. 423–436",
+    { title: "Lecture 12: ICMP and network management", pages: "pp. 423–436", slides: "L12",
       notes: ["icmp", "mgmt"],
       focus: "Keep diagnosing apart from managing. ICMP reports network-layer conditions and underpins ping and traceroute; SNMP and NETCONF/YANG give structured ways to monitor and configure devices.",
       takeaway: "Operating a network takes more than forwarding and routing. ICMP lets hosts and routers report and diagnose network-layer conditions, while network management lets operators monitor, organise and configure their devices." },

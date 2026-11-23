@@ -23,11 +23,11 @@ export default {
   lab: "Wireshark lab: Getting Started", tutor: 1,
   // Course lectures for this module; `notes` lists the study-notes section ids each one covers.
   lectures: [
-    { title: "Lecture 1: Computer networks and the Internet", pages: "pp. 1–21, 47–54",
+    { title: "Lecture 1: Computer networks and the Internet", pages: "pp. 1–21, 47–54", slides: "L01", keys: ["<b>Network of networks</b>: many independently managed networks connected so end systems and applications can communicate.", "<b>Protocols are rules</b>: message format, order, and the actions taken when messages are sent or received.", "<b>Edge, access and core</b>: hosts create and consume data, access links carry it, the core moves packets between networks.", "<b>Layers manage complexity</b>: each layer serves the one above and relies on the one below.", "<b>Encapsulation moves data</b>: message → segment → datagram → frame on the way down the stack."],
       notes: ["internet", "edge", "layers"],
       focus: "Build a mental picture of what the Internet is made of, what protocols do, where end systems sit, and how each layer provides a service to the layer above.",
       takeaway: "The Internet is a network of interconnected networks whose end systems communicate using agreed protocols. Layers manage the complexity: each one provides services to the layer above and uses the services of the layer below." },
-    { title: "Lecture 2: Network core, performance and security", pages: "pp. 22–46, 54–58",
+    { title: "Lecture 2: Network core, performance and security", pages: "pp. 22–46, 54–58", slides: "L02",
       notes: ["core", "delay", "security"],
       focus: "Understand how packets move through the core, why congestion causes delay and loss, how link capacities limit throughput, and which threats need which protection. Practise the delay and throughput calculations.",
       takeaway: "The core moves data by packet switching through shared routers and links, so packets can be delayed or lost, and throughput is capped by the path's bottleneck. Communicating over a network also brings security risks that need protection at several layers." },
